@@ -574,7 +574,7 @@ class GUIIntegrater(QWidget):
                             new_txt = new_txt[:-2]
                         if idx > 0 and idx % 5 == 0:
                             new_txt += "\n"
-                    self.intensity_txt.setText(new_txt )
+                    self.intensity_txt.setText(new_txt)
 
             self.intensity_txt.setText(
                     self.intensity_display

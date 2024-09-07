@@ -1,5 +1,5 @@
 name: multiplexed-image-annotator
-display_name: Multiplexed Image Annotator
+display_name: RIBCA - Multiplexed Image Annotator
 # use 'hidden' to remove plugin from napari hub search results
 visibility: public
 # see https://napari.org/stable/plugins/manifest.html for valid categories
@@ -11,11 +11,11 @@ contributions:
       title: Annotate a Single Image
     - id: multiplexed-image-annotator.batch_process
       python_name: multiplexed_image_annotator:BatchProcess
-      title: Batch Process
+      title: Batch Processing
 
 
   widgets:
     - command: multiplexed-image-annotator.original_widget
       display_name: Single Image Annotator
     - command: multiplexed-image-annotator.batch_process
-      display_name: Batch Process
+      display_name: Batch Processing
