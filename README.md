@@ -71,3 +71,5 @@ Single Image Annotator is designed to tune the hyparameters, annotate one image 
 ![napari_plugin](https://github.com/user-attachments/assets/858c9845-3c00-4e18-bc15-88e482be5b59)
 
 The main Napari build-in viewer (yellow box) shows the original tissue image, cell segmentation, and our annotation results in three layers; the panel in red box is for user to required file paths and hyperparameters; below, the panel in cyan lists marker and cell-type names; when the user clicks any cells on the cell segmentation layer in the main viewer, the green panel will show the cell-level marker expression intensity of that cell.
+
+When running the Batch Processing, RIBCA will be running in the backend and do not involve interactive and visualization features. Results will be saved to the assigned folder.
