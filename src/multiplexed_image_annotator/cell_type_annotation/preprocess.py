@@ -17,7 +17,7 @@ from .markerImputer import MarkerImputer
 
 
 class ImageProcessor(object):
-    def __init__(self, csv_path, parser, main_path, batch_id='', normalization=True, blur=0) -> None:
+    def __init__(self, csv_path, parser, main_path, device, batch_id='', normalization=True, blur=0) -> None:
         df = pd.read_csv(csv_path)
         self.image_paths = df['image_path']
         self.mask_paths = df['mask_path']
@@ -46,9 +46,10 @@ class ImageProcessor(object):
 
 
         self.masks = []
+        self.device = device
 
 
-    def _img2patches(self, image, mask, channel_index, cell_pos_dict, id, patch_size=40, save_tensor=True, save_path=None, int_full=False):
+    def _img2patches(self, image, mask, channel_index, cell_pos_dict, imputer, id, patch_size=40, save_tensor=True, save_path=None, int_full=False):
         min_val, img_zero = self._move_image_range(image)
 
         temp = np.zeros((len(cell_pos_dict), len(channel_index), patch_size, patch_size))
@@ -80,8 +81,8 @@ class ImageProcessor(object):
         
         tensor_patch = torch.tensor(temp, dtype=torch.float32)
         del temp
-        if self.imputer is not None:
-            tensor_patch = self.imputer.impute(tensor_patch, 64)
+        if imputer is not None:
+            tensor_patch = imputer.impute(tensor_patch, 64)
         if save_tensor:
             f = os.path.join(save_path, r"{}.pt".format(id))
             torch.save(tensor_patch, f)
@@ -205,44 +206,44 @@ class ImageProcessor(object):
     def transform(self):
         i = 0
         for image_path, mask_path in zip(self.image_paths, self.mask_paths):
-            if image_path.endswith(".tif") or image_path.endswith(".tiff"):
-                image = imread(image_path)
-                
+            image = imread(image_path)
 
-                if mask_path.endswith(".tif") or mask_path.endswith(".tiff"):
-                    mask = imread(mask_path)
-                    if len(mask.shape) == 3:
-                        mask = mask[:, :, 0] # assume the first channel is the mask
-                if mask_path.endswith(".png"):
-                    mask = np.array(Image.open(mask_path))
-
-                if self.normalization:
-                    image = self._normalize(image, blur=self.blur)
-                
-                self.masks.append(mask)
-                
-                cell_pos_dict = self._cell_pos_dict(mask)
-                self.cell_pos_dict.append(cell_pos_dict)
-                for q, panel in enumerate(self.parser.panels):
-                    if self.parser.indices[panel] is None:
-                        continue
-                    index = self.parser.indices[panel]
+            mask = imread(mask_path)
+            if len(mask.shape) == 3:
+                mask = mask[:, :, 0] # assume the first channel is the mask
 
 
-                    # get index of -1 in index
-                    idx = [i for i, x in enumerate(index) if x != -1]
-                    try:
-                        self.imputer = MarkerImputer(idx, panel)
-                        print("Imputer for {} is created".format(panel))
-                    except:
-                        self.imputer = None
-                    if -1 not in index:
-                        self.imputer = None
-                    intensity_all, intensity_full = self._img2patches(image, mask, index, cell_pos_dict, id=self.batch_id + "_" + str(i) + "_" + panel, 
-                                      save_path=self.save_path, save_tensor=True, int_full=q==0)
-                    if q == 0:
-                        self.intensity_full.append(intensity_full)
-                    for j, m in enumerate(self.parser.panels[panel]):
-                        if len(self.intensity_all[m]) < i + 1:
-                            self.intensity_all[m].append(intensity_all[j])
+            if self.normalization:
+                image = self._normalize(image, blur=self.blur)
+            
+            self.masks.append(mask)
+            
+            cell_pos_dict = self._cell_pos_dict(mask)
+            self.cell_pos_dict.append(cell_pos_dict)
+            for q, panel in enumerate(self.parser.panels):
+                if self.parser.indices[panel] is None:
+                    continue
+                index = self.parser.indices[panel]
+
+
+                # get index of -1 in index
+                idx = [i for i, x in enumerate(index) if x != -1]
+
+                self.imputer = None
+                if -1 not in index:
+                    self.imputer = None
+                    intensity_all, intensity_full = self._img2patches(image, mask, index, cell_pos_dict, None, id=self.batch_id + "_" + str(i) + "_" + panel, 
+                                    save_path=self.save_path, save_tensor=True, int_full=q==0)
+                else:
+                    imputer = MarkerImputer(idx, self.device, panel)
+                    print("Imputer for {} is created".format(panel))
+                    intensity_all, intensity_full = self._img2patches(image, mask, index, cell_pos_dict, imputer, id=self.batch_id + "_" + str(i) + "_" + panel, 
+                                    save_path=self.save_path, save_tensor=True, int_full=q==0)
+                self.imputer = None
+
+                if q == 0:
+                    self.intensity_full.append(intensity_full)
+                for j, m in enumerate(self.parser.panels[panel]):
+                    if len(self.intensity_all[m]) < i + 1:
+                        self.intensity_all[m].append(intensity_all[j])
             i += 1

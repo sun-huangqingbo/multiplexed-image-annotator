@@ -33,9 +33,12 @@ class MarkerParser():
                 # find the index of the marker in the marker_list
                 matched.append(marker_list.index(marker))
             else:
-                if not self.strict and len(panel) > 4:
+                if not self.strict and len(panel) > 3:
                     missing.append(marker)
-                    if len(missing) > 1:
+                    if panel != "immune_base" and len(missing) > 4:
+                        print(f"Missing markers: {missing}, ", end="")
+                        return None
+                    elif panel == "immune_base" and len(missing) > 1:
                         print(f"Missing markers: {missing}, ", end="")
                         return None
                     else:

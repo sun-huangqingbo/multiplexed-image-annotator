@@ -114,7 +114,7 @@ class Annotator(object):
 
         self.channel_parser.parse(marker_list_path)
 
-        self.preprocessor = ImageProcessor(image_path, self.channel_parser, main_dir, batch_id, normalization, blur)
+        self.preprocessor = ImageProcessor(image_path, self.channel_parser, main_dir, device, batch_id, normalization, blur)
         self._loaded = False
 
         self._n_images = 0

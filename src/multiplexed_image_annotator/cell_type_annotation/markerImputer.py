@@ -3,7 +3,7 @@ from functools import partial
 import torch
 import torch.nn as nn
 import numpy as np
-
+import os
 from timm.models.vision_transformer import PatchEmbed, Block
 
 
@@ -256,18 +256,18 @@ class MaskedAutoencoderViT(nn.Module):
     
 
 class MarkerImputer():
-    def __init__(self, channel_index, panel=""):
-        if panel == "immune_full":
+    def __init__(self, channel_index, device, panel=""):
+        if panel == "immune_full" and os.path.exists(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_full_impute.pth"):
             checkpoint = torch.load(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_full_impute.pth")["model"]
             img_size = (120, 200)
             channel_number = 15
             self.shape = (3, 5)
-        elif panel == "immune_extended":
+        elif panel == "immune_extended" and os.path.exists(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_extended_impute.pth"):
             checkpoint = torch.load(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_extended_impute.pth")["model"]
             img_size = (80, 200)
             channel_number = 10
             self.shape = (2, 5)
-        elif panel == "immune_base":
+        elif panel == "immune_base" and os.path.exists(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_base_impute.pth"):
             checkpoint = torch.load(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_base_impute.pth")["model"]
             img_size = (40, 280)
             channel_number = 7
@@ -275,13 +275,15 @@ class MarkerImputer():
         else:
             raise ValueError("Invalid panel")
         
+        self.device = device
+        
         self.model = MaskedAutoencoderViT(
             img_size=img_size, in_chans=1,
             patch_size=40, embed_dim=768, depth=12, num_heads=12,
             decoder_embed_dim=512, decoder_depth=8, decoder_num_heads=8,
             mlp_ratio=4, norm_layer=partial(nn.LayerNorm, eps=1e-6))
         self.model.load_state_dict(checkpoint)
-        self.model = self.model.to("cuda")
+        self.model = self.model.to(self.device)
         self.model.eval()
 
         
@@ -296,7 +298,7 @@ class MarkerImputer():
             for i in range(h):
                 for j in range(w):
                     data_2[:, 0, i * data.shape[2]: (i + 1) * data.shape[2], j * data.shape[3]: (j + 1) * data.shape[3]] = data[:, i * w + j, :, :]
-            data_2 = data_2.cuda()
+            data_2 = data_2.to(self.device)
 
             noise = torch.ones(data_2.shape[0], h * w) * 0.8
             for i in range(self.channel_number):
@@ -304,8 +306,8 @@ class MarkerImputer():
                     noise[:, i] = 0.1
 
             for i in range(len(data_2) // batch_size + 1):
-                x = data_2[i * batch_size: (i + 1) * batch_size].cuda()
-                noise_ = noise[i * batch_size: (i + 1) * batch_size].cuda()
+                x = data_2[i * batch_size: (i + 1) * batch_size].to(self.device)
+                noise_ = noise[i * batch_size: (i + 1) * batch_size].to(self.device)
                 pred, mask = self.model(x, len(self.channel_index), noise_)
                 pred = self.model.unpatchify(pred, self.shape)
                 mask = mask.detach()
