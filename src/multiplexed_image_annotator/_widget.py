@@ -34,7 +34,8 @@ from magicgui import magic_factory, magicgui
 from magicgui.widgets import CheckBox, Container, create_widget, Label
 from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget, QLabel, QVBoxLayout
 from napari.utils.notifications import show_info
-from skimage.io import imread
+from tifffile import imread
+import imageio
 import pathlib
 import os
 import json
@@ -111,7 +112,7 @@ class BatchProcess(QWidget):
 
     # constructing the UI
     @magicgui(
-        call_button="Set Parameters and Run Segmentation",
+        call_button="Set Parameters and Run Annotator",
         layout='vertical',
         device={'choices': ['cpu', 'cuda']},
         batch_size={'min': 1, 'max': 10000, 'step': 1},
@@ -125,7 +126,7 @@ class BatchProcess(QWidget):
         json_filename=pathlib.Path('PLEASE SELECT YOUR PARAMS JSON FILE (OPTIONAL)'),
         marker_file=pathlib.Path('PLEASE SELECT YOUR MARKER FILE (REQUIRED)'),
         csv_file=pathlib.Path('PLEASE SELECT YOUR .CSV FILE (REQUIRED)'),
-        user_input_str='Please input your string here',
+        batch_id='',
         device='cuda',
         batch_size=128,
         main_dir=pathlib.Path('PLEASE SELECT YOUR MAIN DIR (REQUIRED)'),
@@ -147,7 +148,7 @@ class BatchProcess(QWidget):
             'normalize': normalize,
             'blur': blur,
             'confidence': confidence,
-            'batch_id': user_input_str,
+            'batch_id': batch_id,
             'cell_type_confidence': cell_type_confidence
         }
         self.hyper_params = new_dict
@@ -204,7 +205,7 @@ class BatchProcess(QWidget):
 
     # NOTE: This is the callback function when user input some string
     def user_input_str_callback(self):
-        print(self.params_panel.user_input_str.value)
+        print(self.params_panel.batch_id.value)
 
     # parse the json file, if want to add more parameters, consider this function
     def parse_json(self):
@@ -262,7 +263,7 @@ class BatchProcess(QWidget):
 
     def update_call_btn(self, status):
         if status:
-            self.params_panel.call_button.text = "Set Parameters and Run Segmentation"
+            self.params_panel.call_button.text = "Set Parameters and Run Annotator"
             self.params_panel.call_button.show()
         else:
             self.params_panel.call_button.hide()
@@ -303,8 +304,8 @@ class GUIIntegrater(QWidget):
         # self.layout().addWidget(self.label_txt)
         btn_main_panel = QPushButton("Multiplexed Image Annotator")
         btn_label_panel = QPushButton("Marker/Antibody Panel")
-        btn_cell_types_panel = QPushButton("Cell-type Panel")
-        btn_intensity_panel = QPushButton("Panel for Intensity")
+        btn_cell_types_panel = QPushButton("Cell type Panel")
+        btn_intensity_panel = QPushButton("Cell-level Intensity")
 
 
         btn_main_panel.clicked.connect(self.launchMainPanel)
@@ -341,7 +342,7 @@ class GUIIntegrater(QWidget):
         output_addr = f"{working_dir}/output_img.png"
 
         try: 
-            output_img = imread(output_addr)
+            output_img = imageio.imread(output_addr)
             self.viewer.add_labels(output_img, name="output_img")
         except:
             print("output_img reading error")
@@ -374,7 +375,7 @@ class GUIIntegrater(QWidget):
 
     # constructing the UI
     @magicgui(
-        call_button="Set Parameters and Run Segmentation",
+        call_button="Set Parameters and Run Annotator",
         layout='vertical',
         device={'choices': ['cpu', 'cuda']},
         batch_size={'min': 1, 'max': 10000, 'step': 1},
@@ -498,7 +499,7 @@ class GUIIntegrater(QWidget):
             return
 
         try:
-            img_name = "user_seg_image"
+            img_name = "multiplexed_image"
             img = imread(img_path)
             if self.files_idices[0] != -1:
                 self.viewer.layers[img_name].data = img
@@ -548,8 +549,8 @@ class GUIIntegrater(QWidget):
         if not os.path.exists(mask_path):
             return
         try:
-            mask_name = "user_seg_mask"
-            mask = imread(mask_path)
+            mask_name = "cell_mask"
+            mask = imageio.imread(mask_path)
             if self.files_idices[1] != -1:
                 self.viewer.layers[mask_name].data = mask
             else:
@@ -567,14 +568,18 @@ class GUIIntegrater(QWidget):
                     val = layer.get_value(data_coordinates)
                     intensity = self.intensity_dict.get(val)
                     new_txt = ""
-                    for idx, marker in enumerate(self.markers):
-                        new_txt += f"{marker}: {intensity[idx]:{1}.{4}}, "
-                        # for the last element, do not have ,
-                        if idx == len(self.markers) - 1:
-                            new_txt = new_txt[:-2]
-                        if idx > 0 and idx % 5 == 0:
-                            new_txt += "\n"
-                    self.intensity_txt.setText(new_txt)
+                    if intensity is not None:
+                        for idx, marker in enumerate(self.markers):
+                            new_txt += f"{marker}: {intensity[idx]:{1}.{4}}, "
+                            # for the last element, do not have ,
+                            if idx == len(self.markers) - 1:
+                                new_txt = new_txt[:-2]
+                            if idx > 0 and idx % 5 == 0:
+                                new_txt += "\n"
+                        self.intensity_txt.setText(new_txt)
+                    else:
+                        new_txt = "Cell-level expression intensity has been detected.\nIt will be displayed here.\nPLEASE SELECT MASK LAYER TO USE THIS FUNCTION."
+                        self.intensity_txt.setText(new_txt)
 
             self.intensity_txt.setText(
                     self.intensity_display
@@ -589,18 +594,18 @@ class GUIIntegrater(QWidget):
 
     def update_call_btn(self, status):
         if status:
-            self.params_panel.call_button.text = "Set Parameters and Run Segmentation"
+            self.params_panel.call_button.text = "Set Parameters and Run Annotator"
             self.params_panel.call_button.show()
         else:
             self.params_panel.call_button.hide()
 
     def handle_delete_file(self, event):
 
-        if event.value.name == "user_seg_image":
+        if event.value.name == "multiplexed_image":
             self.files_idices[0] = -1
             self.params_panel.image_file.value = "PLEASE SELECT YOUR IMAGE FILE (REQUIRED)"
 
-        if event.value.name == "user_seg_mask":
+        if event.value.name == "cell_mask":
             self.files_idices[1] = -1
             self.params_panel.mask_file.value = "PLEASE SELECT YOUR MASK FILE (REQUIRED)"
 
@@ -610,19 +615,19 @@ class GUIIntegrater(QWidget):
     def launchLabelPanel(self):
         self.viewer.window.add_dock_widget(
             self.label_txt,
-            name="Panel for labels"
+            name="Marker/Antibody Panel"
         )
 
     def launchIntensityPanel(self):
         self.viewer.window.add_dock_widget(
             self.intensity_txt,
-            name="Panel for intensity"
+            name="Cell-level average intensity"
         )
 
     def launchCellTypesPanel(self):
         self.viewer.window.add_dock_widget(
             self.cell_types_txt,
-            name="Panel for cell types"
+            name="Cell types"
         )
 
     def launchMainPanel(self):
