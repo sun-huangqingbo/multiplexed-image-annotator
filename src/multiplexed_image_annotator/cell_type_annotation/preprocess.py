@@ -220,7 +220,8 @@ class ImageProcessor(object):
             
             cell_pos_dict = self._cell_pos_dict(mask)
             self.cell_pos_dict.append(cell_pos_dict)
-            for q, panel in enumerate(self.parser.panels):
+            q = 0
+            for panel in self.parser.panels:
                 if self.parser.indices[panel] is None:
                     continue
                 index = self.parser.indices[panel]
@@ -246,4 +247,5 @@ class ImageProcessor(object):
                 for j, m in enumerate(self.parser.panels[panel]):
                     if len(self.intensity_all[m]) < i + 1:
                         self.intensity_all[m].append(intensity_all[j])
+                q += 1
             i += 1

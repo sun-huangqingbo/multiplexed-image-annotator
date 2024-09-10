@@ -52,7 +52,7 @@ class BatchProcess(QWidget):
     def __init__(self):
         super().__init__()
         self.viewer = napari.current_viewer()
-        self.params_panel.json_filename.changed.connect(self.parse_json)
+        self.params_panel.json_file.changed.connect(self.parse_json)
 
         self.params_panel.marker_file.changed.connect(self.add_marker)
 
@@ -123,7 +123,7 @@ class BatchProcess(QWidget):
     )
     def params_panel(
         self,
-        json_filename=pathlib.Path('PLEASE SELECT YOUR PARAMS JSON FILE (OPTIONAL)'),
+        json_file=pathlib.Path('PLEASE SELECT YOUR PARAMS JSON FILE (OPTIONAL)'),
         marker_file=pathlib.Path('PLEASE SELECT YOUR MARKER FILE (REQUIRED)'),
         csv_file=pathlib.Path('PLEASE SELECT YOUR .CSV FILE (REQUIRED)'),
         batch_id='',
@@ -138,7 +138,7 @@ class BatchProcess(QWidget):
         cell_type_confidence=None
     ):
         new_dict = {
-            'json_filename': str(json_filename),
+            'json_filename': str(json_file),
             'marker_file': str(marker_file),
             'csv_file': str(csv_file),
             'device': device,
@@ -386,7 +386,7 @@ class GUIIntegrater(QWidget):
     )
     def params_panel(
         self,
-        json_filename=pathlib.Path('PLEASE SELECT YOUR PARAMS JSON FILE (OPTIONAL)'),
+        json_file=pathlib.Path('PLEASE SELECT YOUR PARAMS JSON FILE (OPTIONAL)'),
         image_file=pathlib.Path('PLEASE SELECT YOUR IMAGE FILE (REQUIRED)'),
         marker_file=pathlib.Path('PLEASE SELECT YOUR MARKER FILE (REQUIRED)'),
         mask_file=pathlib.Path('PLEASE SELECT YOUR MASK FILE (REQUIRED)'),
@@ -402,7 +402,7 @@ class GUIIntegrater(QWidget):
 
     ):
         new_dict = {
-            'json_filename': str(json_filename),
+            'json_filename': str(json_file),
             'image_file': str(image_file),
             'marker_file': str(marker_file),
             'mask_file': str(mask_file),
@@ -471,14 +471,14 @@ class GUIIntegrater(QWidget):
     # parse the json file, if want to add more parameters, consider this function
     def parse_json(self):
         # to ensure whether the json file exists
-        if not os.path.exists(self.params_panel.json_filename.value):
+        if not os.path.exists(self.params_panel.json_file.value):
             print("json file does not exist")
             show_info("Notice! Your json file does not exist!")
         else:
             print("json file exists")
             # try to parse the json file to update the hyper-parameters dict
             try:
-                with open(self.params_panel.json_filename.value, 'r') as f:
+                with open(self.params_panel.json_file.value, 'r') as f:
                     new_dict = json.load(f)
                     self.params_panel.device.value = new_dict['device']
                     self.params_panel.batch_size.value = new_dict['batch_size']

@@ -149,7 +149,7 @@ class Annotator(object):
         if cell_type_confidence is None:
             self.cell_type_confidence = {'B cell': -1, 'CD4 T cell': -1, 'CD8 T cell': -1, 'Dendritic cell': -1, 'Regulatory T cell': -1, 'Granulocyte cell': -1, 'Mast cell': -1, 
                         'M1 macrophage cell': -1, 'M2 macrophage cell': -1, 'Natural killer cell': -1, 'Plasma cell': -1, 'Endothelial cell': -1,
-                        'Epithelial cell': -1, 'Stroma cell': -1, 'Smooth muscle': -1, 'Proliferating/tumor cell': -1, 'Nerve cell': -1}
+                        'Epithelial cell': -1, 'Stroma cell': -1, 'Smooth muscle': -1, 'Proliferating/tumor cell': -1, 'Nerve cell': -1, 'Others': -1}
         else:
             self.cell_type_confidence = cell_type_confidence
 
