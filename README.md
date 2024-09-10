@@ -52,7 +52,7 @@ Our pipeline requires the following hyper-parameters:
 - device: use CPU or GPU for computing
 - batch size: used for marker imputation and cell type prediction
 - main directory: the directory that all output files will be saved at
-- strict: whether to use the marker imputation feature, when it is false, the model will impute images of missing markers. default False.
+- impute: whether to use the marker imputation feature, when it is True, the model will impute images of missing markers. default True.
 - normalize: whether to normalize the multiplexed image, default True. We recommend using this feature to ensure the image is normalized as expected, which is essential for cell type prediction
 - blur: whether to perform Gaussian blurring of the image in the preprocessing step, the default value is set to 0.5. The range of this value is expected to be 0 ~ 1.
 - confidence: the threshold used to determine if a cell type call is valid; if the prediction confidence is lower than this value, the model will predict that the cell image is "Others", the default value is set to 0.3. The larger this value, the more "Others" types will be annotated rather than valid cell types
