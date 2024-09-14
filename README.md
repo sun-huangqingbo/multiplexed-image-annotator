@@ -41,7 +41,21 @@ pip install -e .
 Our tool requires a 3D (CHW) multiplexed tissue TIFF image stack, its cell segmentation mask (in 2D) where 0 means background and 1 ~ N means cell regions, and a text file containing an antibody panel where each line lists a marker name. Please find examples in `example_files` folder.
 
 Note that the antibody/marker names need to EXACTLY match the names provided below in order to let the program to automatically match them with our panels.
-MARKER NAMES
+
+- Basic Panel:
+CD45, CD20 (or CD79), CD4, CD8, DAPI, CD11c, CD3
+ 
+- Full Panel:
+DAPI, CD3, CD4, CD8, CD11c, CD15, CD20 (or CD79), CD45, CD56, CD68, CD138 (or CD38), CD163, FoxP3, Granzyme B, Tryptase
+ 
+- Extended Panel:
+DAPI, CD3, CD4, CD8, CD11c, CD20 (or CD79), CD45, CD68, CD163, CD56
+
+- Structure Panel:
+DAPI, aSMA, CD31, PanCK, Vimentin, Ki67, CD45
+
+- Nerve Panel:
+DAPI, CD45, GFAP (or CHGA)
 
 For batch processing, it needs an additional csv file with two columns listed the paths of images and their segmentation masks per row. The heads of two columns are: `image_paths` and `mask_paths`. Please find exmaples in `example_files` folder.
 
