@@ -1,7 +1,7 @@
 # RIBCA: A generic cell type annotator for highly multiplexed tissue images
 
 ## Overview
-This repository contains a flexible and robust cell-type annotation tool for highly multiplexed tissue images. Our paper can be found [here]. It is generalizable to new image collections without extra fine-tuning. 
+This repository contains a flexible and robust cell-type annotation tool for highly multiplexed tissue images. Our paper can be found [here](https://www.biorxiv.org/content/10.1101/2024.09.12.612510v1). It is generalizable to new image collections without extra fine-tuning. 
 Instead of a single model, we constructed an ensemble of image-derived models, which makes it compatible with any common antibody panel by matching their markers with one or multiple base models in this ensemble.
 The output of this tool is a cell-type map, its annotation confidence, and spatial statistics of cell-type distribution. Our software has a Napari plugin for interactively validating annotations.
 
