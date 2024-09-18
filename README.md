@@ -29,6 +29,7 @@ The output of this tool is a cell-type map, its annotation confidence, and spati
 - seaborn
 - skimage
 - tifffile
+- timm
 - torch
 - umap
 - gdown
