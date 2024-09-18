@@ -54,7 +54,7 @@ class MarkerParser():
         marker_list = np.loadtxt(marker_file, delimiter=',', dtype=str)
 
         # check replacements
-        replacements = {'DNA': 'DAPI', 'CD16': 'CD15', 'CD38': 'CD138', 'CD21': 'CD20'}
+        replacements = {'DNA': 'DAPI', 'CD16': 'CD15', 'CD38': 'CD138', 'CD21': 'CD20', 'CHGA': 'GFAP'}
         # replace the markers
         for i in range(len(marker_list)):
             if marker_list[i] in replacements:
