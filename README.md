@@ -27,6 +27,7 @@ The output of this tool is a cell-type map, its annotation confidence, and spati
 - pyqt
 - scipy
 - seaborn
+- scikit-learn
 - skimage
 - tifffile
 - timm
