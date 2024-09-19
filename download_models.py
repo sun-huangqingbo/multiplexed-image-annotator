@@ -1,7 +1,8 @@
 import os
 import gdown
 
-
+if not os.path.exists("src/multiplexed_image_annotator/cell_type_annotation/models"):
+    os.makedirs("src/multiplexed_image_annotator/cell_type_annotation/models")
 
 immune_base_url = "https://drive.google.com/file/d/1EOe216MIV7o_pxAHIYg0KUab94BnhP0Z/view?usp=sharing"
 immune_base_path = os.path.join(f"src/multiplexed_image_annotator/cell_type_annotation/models", "immune_base.pt")
