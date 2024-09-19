@@ -137,6 +137,8 @@ def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id,
     
     path_ = main_dir + "images.csv"
     annotator = Annotator(marker_list_path, path_, device, main_dir, batch_id, strict, normalization, blur, confidence, cell_type_confidence)
+    if not annotator.channel_parser.immune_base and not annotator.channel_parser.immune_extended and not annotator.channel_parser.immune_full and not annotator.channel_parser.struct and not annotator.channel_parser.nerve:
+        raise ValueError("No panels are applied. Please check the marker list.")
     annotator.preprocess()
     annotator.predict(bs)
     annotator.generate_heatmap(integrate=True)
@@ -154,6 +156,8 @@ def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id,
 
 def gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, normalization, blur, confidence, cell_type_confidence):
     annotator = Annotator(marker_list_path, image_path, device, main_dir, batch_id, strict, normalization, blur, confidence, cell_type_confidence)
+    if not annotator.channel_parser.immune_base and not annotator.channel_parser.immune_extended and not annotator.channel_parser.immune_full and not annotator.channel_parser.struct and not annotator.channel_parser.nerve:
+        raise ValueError("No panels are applied. Please check the marker list.")
     annotator.preprocess()
     annotator.predict(bs)
     annotator.generate_heatmap(integrate=True)

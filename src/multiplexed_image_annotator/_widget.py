@@ -210,14 +210,14 @@ class BatchProcess(QWidget):
     # parse the json file, if want to add more parameters, consider this function
     def parse_json(self):
         # to ensure whether the json file exists
-        if not os.path.exists(self.params_panel.json_filename.value):
+        if not os.path.exists(self.params_panel.json_file.value):
             print("json file does not exist")
             show_info("Notice! Your json file does not exist!")
         else:
             print("json file exists")
             # try to parse the json file to update the hyper-parameters dict
             try:
-                with open(self.params_panel.json_filename.value, 'r') as f:
+                with open(self.params_panel.json_filen.value, 'r') as f:
                     new_dict = json.load(f)
                     self.params_panel.device.value = new_dict['device']
                     self.params_panel.batch_size.value = new_dict['batch_size']
@@ -273,7 +273,7 @@ class GUIIntegrater(QWidget):
     def __init__(self):
         super().__init__()
         self.viewer = napari.current_viewer()
-        self.params_panel.json_filename.changed.connect(self.parse_json)
+        self.params_panel.json_file.changed.connect(self.parse_json)
 
         self.params_panel.image_file.changed.connect(self.add_image)
         self.params_panel.marker_file.changed.connect(self.add_marker)
