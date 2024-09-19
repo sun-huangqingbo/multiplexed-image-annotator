@@ -1,12 +1,23 @@
 # RIBCA: A generic cell type annotator for highly multiplexed tissue images
 
 ## Overview
-This repository contains a flexible and robust cell-type annotation tool for highly multiplexed tissue images. Our paper can be found [here]. It is generalizable to new image collections without extra fine-tuning. 
+This repository contains a flexible and robust cell-type annotation tool for highly multiplexed tissue images. Our paper can be found [here](https://www.biorxiv.org/content/10.1101/2024.09.12.612510v1). It is generalizable to new image collections without extra fine-tuning. 
 Instead of a single model, we constructed an ensemble of image-derived models, which makes it compatible with any common antibody panel by matching their markers with one or multiple base models in this ensemble.
 The output of this tool is a cell-type map, its annotation confidence, and spatial statistics of cell-type distribution. Our software has a Napari plugin for interactively validating annotations.
 
 ## Citation
-
+```
+@article {Sun2024.09.12.612510,
+	author = {Sun, Huangqingbo and Yu, Shiqiu and Casals, Anna Martinez and B{\"a}ckstr{\"o}m, Anna and Lu, Yuxin and Lindskog, Cecilia and Lundberg, Emma and Murphy, Robert F.},
+	title = {Flexible and robust cell type annotation for highly multiplexed tissue images},
+	elocation-id = {2024.09.12.612510},
+	year = {2024},
+	doi = {10.1101/2024.09.12.612510},
+	publisher = {Cold Spring Harbor Laboratory},
+	URL = {https://www.biorxiv.org/content/early/2024/09/16/2024.09.12.612510},
+	journal = {bioRxiv}
+}
+```
 
 ## Requirements
 - magicgui
@@ -18,6 +29,7 @@ The output of this tool is a cell-type map, its annotation confidence, and spati
 - seaborn
 - skimage
 - tifffile
+- timm
 - torch
 - umap
 - gdown
@@ -41,7 +53,21 @@ pip install -e .
 Our tool requires a 3D (CHW) multiplexed tissue TIFF image stack, its cell segmentation mask (in 2D) where 0 means background and 1 ~ N means cell regions, and a text file containing an antibody panel where each line lists a marker name. Please find examples in `example_files` folder.
 
 Note that the antibody/marker names need to EXACTLY match the names provided below in order to let the program to automatically match them with our panels.
-MARKER NAMES
+
+- Basic Panel:
+CD45, CD20 (or CD79), CD4, CD8, DAPI, CD11c, CD3
+ 
+- Full Panel:
+DAPI, CD3, CD4, CD8, CD11c, CD15, CD20 (or CD79), CD45, CD56, CD68, CD138 (or CD38), CD163, FoxP3, Granzyme B, Tryptase
+ 
+- Extended Panel:
+DAPI, CD3, CD4, CD8, CD11c, CD20 (or CD79), CD45, CD68, CD163, CD56
+
+- Structure Panel:
+DAPI, aSMA, CD31, PanCK, Vimentin, Ki67, CD45
+
+- Nerve Panel:
+DAPI, CD45, GFAP (or CHGA)
 
 For batch processing, it needs an additional csv file with two columns listed the paths of images and their segmentation masks per row. The heads of two columns are: `image_paths` and `mask_paths`. Please find exmaples in `example_files` folder.
 
