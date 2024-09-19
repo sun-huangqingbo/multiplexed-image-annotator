@@ -25,6 +25,7 @@
         "Stroma cell": -1,
         "Smooth muscle": -1,
         "Proliferating/tumor cell": 1,
-        "Nerve cell": -1
+        "Nerve cell": -1,
+        "Others": -1
     }
 }

@@ -1,12 +1,12 @@
 [project]
 name = "multiplexed-image-annotator"
 dynamic = ["version"]
-description = "This is a napari plugin to perform a segmentation algorithm on given images."
+description = "This is a napari plugin to annotate cell types in multiplexed tissue images."
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-  {name = "Yuxin Lu"},
-  {email = "yuxinlu@cs.cmu.edu"},
+  {name = "Huangqingbo Sun, Yuxin Lu"},
+  {email = "sunh@stanford.edu"},
 ]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
