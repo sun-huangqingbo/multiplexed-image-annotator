@@ -46,7 +46,7 @@ or directly download them from the URLs in the script and put them in the `src/m
 
 Clone this repo and install it locally by running the following
 ```bash
-pip install -e .
+pip install .
 ```
 
 ### Required input files and hyper-parameters
