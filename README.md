@@ -24,7 +24,7 @@ The output of this tool is a cell-type map, its annotation confidence, and spati
 - matplotlib
 - napari
 - numpy
-- pyqt
+- pyqt5
 - scipy
 - seaborn
 - scikit-learn
