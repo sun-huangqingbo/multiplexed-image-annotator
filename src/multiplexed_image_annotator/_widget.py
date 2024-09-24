@@ -138,7 +138,7 @@ class BatchProcess(QWidget):
         cell_type_confidence=None
     ):
         new_dict = {
-            'json_filename': str(json_file),
+            'json_file': str(json_file),
             'marker_file': str(marker_file),
             'csv_file': str(csv_file),
             'device': device,
@@ -217,7 +217,7 @@ class BatchProcess(QWidget):
             print("json file exists")
             # try to parse the json file to update the hyper-parameters dict
             try:
-                with open(self.params_panel.json_filen.value, 'r') as f:
+                with open(self.params_panel.json_file.value, 'r') as f:
                     new_dict = json.load(f)
                     self.params_panel.device.value = new_dict['device']
                     self.params_panel.batch_size.value = new_dict['batch_size']
@@ -402,7 +402,7 @@ class GUIIntegrater(QWidget):
 
     ):
         new_dict = {
-            'json_filename': str(json_file),
+            'json_file': str(json_file),
             'image_file': str(image_file),
             'marker_file': str(marker_file),
             'mask_file': str(mask_file),
