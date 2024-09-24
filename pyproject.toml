@@ -30,6 +30,17 @@ dependencies = [
     "magicgui",
     "qtpy",
     "scikit-image",
+    "matplotlib",
+    "napari",
+    "pyqt5",
+    "scipy",
+    "seaborn",
+    "scikit-learn",
+    "tifffile",
+    "timm",
+    "torch",
+    "umap",
+    "gdown",
 ]
 
 [project.optional-dependencies]
