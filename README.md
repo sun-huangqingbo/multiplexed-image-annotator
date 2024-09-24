@@ -95,6 +95,10 @@ Single Image Annotator is designed to tune the hyparameters, annotate one image 
 ![image](https://github.com/user-attachments/assets/0b673af5-45b5-456c-830a-366a73438a8b)
 
 
+
+https://github.com/user-attachments/assets/035a587b-a6b1-4364-a0e9-45ec9e93ef93
+
+
 ![napari_plugin](https://github.com/user-attachments/assets/858c9845-3c00-4e18-bc15-88e482be5b59)
 
 The main Napari build-in viewer (yellow box) shows the original tissue image, cell segmentation, and our annotation results in three layers; the panel in red box is for user to required file paths and hyperparameters; below, the panel in cyan lists marker and cell-type names; when the user clicks any cells on the cell segmentation layer in the main viewer, the green panel will show the cell-level marker expression intensity of that cell.
