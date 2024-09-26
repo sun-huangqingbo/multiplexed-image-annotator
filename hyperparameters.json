@@ -6,6 +6,7 @@
     "strict": false,
     "normalize": true,
     "blur": 1,
+    "upper_limit": 100,
     "confidence": 0.3,
     "cell_type_confidence":
     {

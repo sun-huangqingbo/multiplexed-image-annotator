@@ -117,6 +117,7 @@ class BatchProcess(QWidget):
         device={'choices': ['cpu', 'cuda']},
         batch_size={'min': 1, 'max': 10000, 'step': 1},
         blur={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
+        upper_limit={'widget_type': 'FloatSlider', 'min': 95, 'max': 100},
         confidence={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         main_dir={'widget_type': 'FileEdit', 'mode': 'd'},
         job_status={'widget_type': 'Label', 'value': 'You do not have running jobs.'}
@@ -132,6 +133,7 @@ class BatchProcess(QWidget):
         main_dir=pathlib.Path('PLEASE SELECT YOUR MAIN DIR (REQUIRED)'),
         strict=False,
         normalize=True,
+        upper_limit=100,
         blur=0.5,
         confidence=0.3,
         job_status='You do not have running jobs.',
@@ -147,6 +149,7 @@ class BatchProcess(QWidget):
             'strict': strict,
             'normalize': normalize,
             'blur': blur,
+            'upper_limit': upper_limit,
             'confidence': confidence,
             'batch_id': batch_id,
             'cell_type_confidence': cell_type_confidence
@@ -225,6 +228,7 @@ class BatchProcess(QWidget):
                     self.params_panel.strict.value = new_dict['strict']
                     self.params_panel.normalize.value = new_dict['normalize']
                     self.params_panel.blur.value = new_dict['blur']
+                    self.params_panel.upper_limit.value = new_dict['upper_limit']
                     self.params_panel.confidence.value = new_dict['confidence']
                     self.params_panel.cell_type_confidence.value = new_dict['cell_type_confidence']
 
@@ -378,8 +382,9 @@ class GUIIntegrater(QWidget):
         call_button="Set Parameters and Run Annotator",
         layout='vertical',
         device={'choices': ['cpu', 'cuda']},
-        batch_size={'min': 1, 'max': 10000, 'step': 1},
+        batch_size={'min': 1, 'max': 10000, 'step': 16},
         blur={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
+        upper_limit={'widget_type': 'FloatSlider', 'min': 95, 'max': 100},
         confidence={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         main_dir={'widget_type': 'FileEdit', 'mode': 'd'},
         job_status={'widget_type': 'Label', 'value': 'You do not have running jobs.'}
@@ -396,6 +401,7 @@ class GUIIntegrater(QWidget):
         strict=False,
         normalize=True,
         blur=0.5,
+        upper_limit=100,
         confidence=0.3,
         job_status='You do not have running jobs.',
         cell_type_confidence=None
@@ -412,6 +418,7 @@ class GUIIntegrater(QWidget):
             'strict': strict,
             'normalize': normalize,
             'blur': blur,
+            'upper_limit': upper_limit,
             'confidence': confidence,
             'cell_type_confidence': cell_type_confidence
         }
@@ -486,6 +493,7 @@ class GUIIntegrater(QWidget):
                     self.params_panel.strict.value = new_dict['strict']
                     self.params_panel.normalize.value = new_dict['normalize']
                     self.params_panel.blur.value = new_dict['blur']
+                    self.params_panel.upper_limit.value = new_dict['upper_limit']
                     self.params_panel.confidence.value = new_dict['confidence']
                     self.params_panel.cell_type_confidence.value = new_dict['cell_type_confidence']
             except:

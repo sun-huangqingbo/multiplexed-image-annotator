@@ -273,7 +273,7 @@ class MarkerImputer():
             channel_number = 7
             self.shape = (1, 7)
         else:
-            raise ValueError("Invalid panel")
+            raise ValueError("Panel not found")
         
         self.device = device
         

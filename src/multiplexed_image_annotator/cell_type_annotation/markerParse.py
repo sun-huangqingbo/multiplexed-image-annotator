@@ -25,9 +25,10 @@ class MarkerParser():
         self.strict = strict
         self.markers = []
 
-    def _matching(self, marker_list, panel):
+    def _matching(self, marker_list, panel, panel_name):
         matched = []
         missing = []
+        thresh = {"immune_base": 1, "immune_extended": 3, "immune_full": 4, "structure": 1, "nerve_cell": 0}
         for marker in panel:
             if marker in marker_list:
                 # find the index of the marker in the marker_list
@@ -35,14 +36,11 @@ class MarkerParser():
             else:
                 if not self.strict and len(panel) > 3:
                     missing.append(marker)
-                    if panel != "immune_base" and len(missing) > 4:
-                        print(f"Missing markers: {missing}, ", end="")
+                    matched.append(-1)
+                    if len(missing) > thresh[panel_name]:
+                        str_missing = ', '.join(missing)
+                        print(f"Markers {str_missing} are not found in the list, ", end="")
                         return None
-                    elif panel == "immune_base" and len(missing) > 1:
-                        print(f"Missing markers: {missing}, ", end="")
-                        return None
-                    else:
-                        matched.append(-1)
                 else:
                     print(f"Marker {marker} is not found in the list, ", end="")
                     return None
@@ -64,7 +62,7 @@ class MarkerParser():
         self.n_markers = len(marker_list)
 
         for panel in self.panels:
-            matched = self._matching(marker_list, self.panels[panel])
+            matched = self._matching(marker_list, self.panels[panel], panel)
             if matched:
                 self.indices[panel] = matched
             else:

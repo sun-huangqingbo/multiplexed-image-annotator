@@ -17,7 +17,7 @@ from .markerImputer import MarkerImputer
 
 
 class ImageProcessor(object):
-    def __init__(self, csv_path, parser, main_path, device, batch_id='', normalization=True, blur=0) -> None:
+    def __init__(self, csv_path, parser, main_path, device, batch_id='', normalization=True, blur=0, amax=100) -> None:
         df = pd.read_csv(csv_path)
         self.image_paths = df['image_path']
         self.mask_paths = df['mask_path']
@@ -32,6 +32,7 @@ class ImageProcessor(object):
 
         self.normalization = normalization
         self.blur = blur
+        self.amax = amax
 
         self.parser = parser
 
@@ -174,7 +175,7 @@ class ImageProcessor(object):
         return smooth
     
 
-    def _normalize(self, img, blur=0):
+    def _normalize(self, img, blur=0, amax=100):
         img = img.astype(np.float32)
         for i in range(img.shape[0]):
 
@@ -192,12 +193,10 @@ class ImageProcessor(object):
             if len(idxx[0]) == 0:
                 img[i, :, :] = -1
                 continue
-            thresh = np.percentile(img[i, :, :][idxx], 98)
-
+            thresh = np.percentile(img[i, :, :], amax)
+            # print(thresh)
             if thresh > 20:
                 img[i, :, :] = np.clip(img[i, :, :], 0, thresh)
-            else:
-                img[i, :, :] = np.clip(img[i, :, :], 0, np.percentile(img[i, :, :], 99.8))
 
 
             img[i, :, :] = 2 * (img[i, :, :] / max(25, np.max(img[i, :, :]))) - 1
@@ -214,7 +213,7 @@ class ImageProcessor(object):
 
 
             if self.normalization:
-                image = self._normalize(image, blur=self.blur)
+                image = self._normalize(image, blur=self.blur, amax=self.amax)
             
             self.masks.append(mask)
             
@@ -230,9 +229,8 @@ class ImageProcessor(object):
                 # get index of -1 in index
                 idx = [i for i, x in enumerate(index) if x != -1]
 
-                self.imputer = None
-                if -1 not in index:
-                    self.imputer = None
+
+                if -1 not in index or panel == "structure" or panel == "nerve":
                     intensity_all, intensity_full = self._img2patches(image, mask, index, cell_pos_dict, None, id=self.batch_id + "_" + str(i) + "_" + panel, 
                                     save_path=self.save_path, save_tensor=True, int_full=q==0)
                 else:
@@ -240,7 +238,7 @@ class ImageProcessor(object):
                     print("Imputer for {} is created".format(panel))
                     intensity_all, intensity_full = self._img2patches(image, mask, index, cell_pos_dict, imputer, id=self.batch_id + "_" + str(i) + "_" + panel, 
                                     save_path=self.save_path, save_tensor=True, int_full=q==0)
-                self.imputer = None
+
 
                 if q == 0:
                     self.intensity_full.append(intensity_full)
