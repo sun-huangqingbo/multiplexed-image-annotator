@@ -9,7 +9,7 @@ from tifffile import imwrite
 from skimage.io import imread
 from skimage.morphology import dilation, disk
 from skimage import filters
-from PIL import Image
+from skimage.transform import resize
 import torch
 
 from .markerParse import MarkerParser
@@ -17,7 +17,7 @@ from .markerImputer import MarkerImputer
 
 
 class ImageProcessor(object):
-    def __init__(self, csv_path, parser, main_path, device, batch_id='', normalization=True, blur=0, amax=100) -> None:
+    def __init__(self, csv_path, parser, main_path, device, batch_id='', normalization=True, blur=0, amax=100, cell_size=30) -> None:
         df = pd.read_csv(csv_path)
         self.image_paths = df['image_path']
         self.mask_paths = df['mask_path']
@@ -48,18 +48,23 @@ class ImageProcessor(object):
 
         self.masks = []
         self.device = device
+        self.scale = cell_size / 30.0
 
 
     def _img2patches(self, image, mask, channel_index, cell_pos_dict, imputer, id, patch_size=40, save_tensor=True, save_path=None, int_full=False):
         min_val, img_zero = self._move_image_range(image)
 
-        temp = np.zeros((len(cell_pos_dict), len(channel_index), patch_size, patch_size))
+        patch_size = int(patch_size * self.scale)
+
+        temp = np.zeros((len(cell_pos_dict), len(channel_index), 40, 40))
         cell_index = cell_pos_dict.keys()
         intensity_all = []
         if int_full:
             intensity_full = []
         for c in cell_index:
             patch, avg_int = self._crop_cell(img_zero, mask, min_val, c, cell_pos_dict, patch_size)
+            # rescale
+            patch = resize(patch, (patch.shape[0], 40, 40), anti_aliasing=True, order=0, preserve_range=True)
             if int_full:
                 intensity_full.append(avg_int)
             if -1 in channel_index:

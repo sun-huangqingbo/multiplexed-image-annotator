@@ -118,6 +118,7 @@ class BatchProcess(QWidget):
         batch_size={'min': 1, 'max': 10000, 'step': 1},
         blur={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         upper_limit={'widget_type': 'FloatSlider', 'min': 95, 'max': 100},
+        cell_size={'min': 1, 'max': 100},
         confidence={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         main_dir={'widget_type': 'FileEdit', 'mode': 'd'},
         job_status={'widget_type': 'Label', 'value': 'You do not have running jobs.'}
@@ -136,6 +137,7 @@ class BatchProcess(QWidget):
         upper_limit=100,
         blur=0.5,
         confidence=0.3,
+        cell_size=30,
         job_status='You do not have running jobs.',
         cell_type_confidence=None
     ):
@@ -152,6 +154,7 @@ class BatchProcess(QWidget):
             'upper_limit': upper_limit,
             'confidence': confidence,
             'batch_id': batch_id,
+            'cell_size': cell_size,
             'cell_type_confidence': cell_type_confidence
         }
         self.hyper_params = new_dict
@@ -230,6 +233,7 @@ class BatchProcess(QWidget):
                     self.params_panel.blur.value = new_dict['blur']
                     self.params_panel.upper_limit.value = new_dict['upper_limit']
                     self.params_panel.confidence.value = new_dict['confidence']
+                    self.params_panel.cell_size.value = new_dict['cell_size']
                     self.params_panel.cell_type_confidence.value = new_dict['cell_type_confidence']
 
 
@@ -286,7 +290,6 @@ class GUIIntegrater(QWidget):
         self.params_panel.job_status.bind(self.update_status_txt)
         self.params_panel.call_button.bind(self.update_call_btn)
 
-        print(len(self.viewer.layers))
         self.viewer.layers.events.removed.connect(self.handle_delete_file)
 
 
@@ -403,6 +406,7 @@ class GUIIntegrater(QWidget):
         blur=0.5,
         upper_limit=100,
         confidence=0.3,
+        cell_size=30,
         job_status='You do not have running jobs.',
         cell_type_confidence=None
 
@@ -420,6 +424,7 @@ class GUIIntegrater(QWidget):
             'blur': blur,
             'upper_limit': upper_limit,
             'confidence': confidence,
+            'cell_size': cell_size,
             'cell_type_confidence': cell_type_confidence
         }
         self.hyper_params = new_dict
@@ -495,6 +500,7 @@ class GUIIntegrater(QWidget):
                     self.params_panel.blur.value = new_dict['blur']
                     self.params_panel.upper_limit.value = new_dict['upper_limit']
                     self.params_panel.confidence.value = new_dict['confidence']
+                    self.params_panel.cell_size.value = new_dict['cell_size']
                     self.params_panel.cell_type_confidence.value = new_dict['cell_type_confidence']
             except:
                 print("json file parsing error")

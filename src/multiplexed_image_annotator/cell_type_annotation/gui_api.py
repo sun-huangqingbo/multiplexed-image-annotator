@@ -26,8 +26,9 @@ def gui_api(working_addr):
     confidence = hyperparameters.get('confidence')
     cell_type_confidence = hyperparameters.get('cell_type_confidence')
     bs = hyperparameters.get('batch_size')
+    cell_size = hyperparameters.get('cell_size')
 
-    img = gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, normalization, blur, amax, confidence, cell_type_confidence)
+    img = gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
 
     return img
 
@@ -47,8 +48,9 @@ def batch_process(working_dir):
     confidence = hyperparameters.get('confidence')
     cell_type_confidence = hyperparameters.get('cell_type_confidence')
     bs = hyperparameters.get('batch_size')
+    cell_size = hyperparameters.get('cell_size')
 
-    gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, normalization, blur, amax, confidence, cell_type_confidence)
+    gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
     f = f"{working_dir}/output.txt"
     with open(f, "w") as file:
         file.write("Batch process completed")
