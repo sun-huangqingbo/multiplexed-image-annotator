@@ -17,7 +17,7 @@ from .markerImputer import MarkerImputer
 
 
 class ImageProcessor(object):
-    def __init__(self, csv_path, parser, main_path, device, batch_id='', normalization=True, blur=0, amax=100, cell_size=30) -> None:
+    def __init__(self, csv_path, parser, main_path, device, batch_id='', infer=True, normalization=True, blur=0, amax=100, cell_size=30) -> None:
         df = pd.read_csv(csv_path)
         self.image_paths = df['image_path']
         self.mask_paths = df['mask_path']
@@ -45,7 +45,7 @@ class ImageProcessor(object):
         if not os.path.exists(self.save_path):
             os.mkdir(self.save_path)
 
-
+        self.infer = infer
         self.masks = []
         self.device = device
         self.scale = cell_size / 30.0
@@ -235,7 +235,7 @@ class ImageProcessor(object):
                 idx = [i for i, x in enumerate(index) if x != -1]
 
 
-                if -1 not in index or panel == "structure" or panel == "nerve":
+                if not self.infer or -1 not in index or panel == "structure" or panel == "nerve":
                     intensity_all, intensity_full = self._img2patches(image, mask, index, cell_pos_dict, None, id=self.batch_id + "_" + str(i) + "_" + panel, 
                                     save_path=self.save_path, save_tensor=True, int_full=q==0)
                 else:

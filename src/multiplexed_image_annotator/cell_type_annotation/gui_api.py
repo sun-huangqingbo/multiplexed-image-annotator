@@ -20,6 +20,7 @@ def gui_api(working_addr):
     main_dir = hyperparameters.get('main_dir')
     batch_id = "single_run"
     strict = hyperparameters.get('strict')
+    infer = hyperparameters.get('infer')
     normalization = hyperparameters.get('normalize')
     blur = hyperparameters.get('blur')
     amax = hyperparameters.get('upper_limit')
@@ -28,7 +29,7 @@ def gui_api(working_addr):
     bs = hyperparameters.get('batch_size')
     cell_size = hyperparameters.get('cell_size')
 
-    img = gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
+    img = gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
 
     return img
 
@@ -42,6 +43,7 @@ def batch_process(working_dir):
     main_dir = hyperparameters.get('main_dir')
     batch_id = hyperparameters.get('batch_id')
     strict = hyperparameters.get('strict')
+    infer = hyperparameters.get('infer')
     normalization = hyperparameters.get('normalize')
     blur = hyperparameters.get('blur')
     amax = hyperparameters.get('upper_limit')
@@ -50,7 +52,7 @@ def batch_process(working_dir):
     bs = hyperparameters.get('batch_size')
     cell_size = hyperparameters.get('cell_size')
 
-    gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
+    gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
     f = f"{working_dir}/output.txt"
     with open(f, "w") as file:
         file.write("Batch process completed")

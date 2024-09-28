@@ -129,14 +129,14 @@ def smooth(mask,c):
 
 
 
-def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, normalization, blur, amax, confidence, cell_size, cell_type_confidence):
+def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence):
 
     # write image and mask paths to a csv file
     temp = [[image_path, mask_path]]
     pd.DataFrame(temp).to_csv(main_dir + "images.csv", index=False, header=["image_path", "mask_path"])
     
     path_ = main_dir + "images.csv"
-    annotator = Annotator(marker_list_path, path_, device, main_dir, batch_id, strict, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
+    annotator = Annotator(marker_list_path, path_, device, main_dir, batch_id, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
     if not annotator.channel_parser.immune_base and not annotator.channel_parser.immune_extended and not annotator.channel_parser.immune_full and not annotator.channel_parser.struct and not annotator.channel_parser.nerve:
         raise ValueError("No panels are applied. Please check the marker list.")
     annotator.preprocess()
@@ -154,8 +154,8 @@ def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id,
     return intensity_dict
     
 
-def gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, normalization, blur, amax, confidence, cell_size, cell_type_confidence):
-    annotator = Annotator(marker_list_path, image_path, device, main_dir, batch_id, strict, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
+def gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence):
+    annotator = Annotator(marker_list_path, image_path, device, main_dir, batch_id, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
     if not annotator.channel_parser.immune_base and not annotator.channel_parser.immune_extended and not annotator.channel_parser.immune_full and not annotator.channel_parser.struct and not annotator.channel_parser.nerve:
         raise ValueError("No panels are applied. Please check the marker list.")
     annotator.preprocess()

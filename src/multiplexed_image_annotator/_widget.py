@@ -133,6 +133,7 @@ class BatchProcess(QWidget):
         batch_size=128,
         main_dir=pathlib.Path('PLEASE SELECT YOUR MAIN DIR (REQUIRED)'),
         strict=False,
+        infer=True,
         normalize=True,
         upper_limit=100,
         blur=0.5,
@@ -149,6 +150,7 @@ class BatchProcess(QWidget):
             'batch_size': batch_size,
             'main_dir': str(main_dir),
             'strict': strict,
+            'infer': infer,
             'normalize': normalize,
             'blur': blur,
             'upper_limit': upper_limit,
@@ -229,6 +231,7 @@ class BatchProcess(QWidget):
                     self.params_panel.batch_size.value = new_dict['batch_size']
                     self.params_panel.main_dir.value = pathlib.Path(new_dict['main_dir'])
                     self.params_panel.strict.value = new_dict['strict']
+                    self.params_panel.infer.value = new_dict['infer']
                     self.params_panel.normalize.value = new_dict['normalize']
                     self.params_panel.blur.value = new_dict['blur']
                     self.params_panel.upper_limit.value = new_dict['upper_limit']
@@ -402,6 +405,7 @@ class GUIIntegrater(QWidget):
         batch_size=128,
         main_dir=pathlib.Path('PLEASE SELECT YOUR MAIN DIR (REQUIRED)'),
         strict=False,
+        infer=True,
         normalize=True,
         blur=0.5,
         upper_limit=100,
@@ -420,6 +424,7 @@ class GUIIntegrater(QWidget):
             'batch_size': batch_size,
             'main_dir': str(main_dir),
             'strict': strict,
+            'infer': infer,
             'normalize': normalize,
             'blur': blur,
             'upper_limit': upper_limit,
@@ -496,6 +501,7 @@ class GUIIntegrater(QWidget):
                     self.params_panel.batch_size.value = new_dict['batch_size']
                     self.params_panel.main_dir.value = pathlib.Path(new_dict['main_dir'])
                     self.params_panel.strict.value = new_dict['strict']
+                    self.params_panel.infer.value = new_dict['infer']
                     self.params_panel.normalize.value = new_dict['normalize']
                     self.params_panel.blur.value = new_dict['blur']
                     self.params_panel.upper_limit.value = new_dict['upper_limit']
