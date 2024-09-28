@@ -28,7 +28,7 @@ class MarkerParser():
     def _matching(self, marker_list, panel, panel_name):
         matched = []
         missing = []
-        thresh = {"immune_base": 1, "immune_extended": 3, "immune_full": 4, "structure": 1, "nerve_cell": 0}
+        thresh = {"immune_base": 1, "immune_extended": 2, "immune_full": 2, "structure": 1, "nerve_cell": 0}
         for marker in panel:
             if marker in marker_list:
                 # find the index of the marker in the marker_list
