@@ -32,7 +32,7 @@ The output of this tool is a cell-type map, its annotation confidence, and spati
 - tifffile
 - timm
 - torch
-- umap
+- umap-learn
 - gdown
 
 NVIDIA graphics hardware with CUDA and cuDNN support is recommended. 
