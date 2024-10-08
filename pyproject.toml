@@ -39,7 +39,7 @@ dependencies = [
     "tifffile",
     "timm",
     "torch",
-    "umap",
+    "umap-learn",
     "gdown",
 ]
 
