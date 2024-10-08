@@ -32,7 +32,7 @@ The output of this tool is a cell-type map, its annotation confidence, and spati
 - tifffile
 - timm
 - torch
-- umap
+- umap-learn
 - gdown
 
 NVIDIA graphics hardware with CUDA and cuDNN support is recommended. 
@@ -73,17 +73,21 @@ DAPI, CD45, GFAP (or CHGA)
 For batch processing, it needs an additional csv file with two columns listed the paths of images and their segmentation masks per row. The heads of two columns are: `image_paths` and `mask_paths`. Please find exmaples in `example_files` folder.
 
 Our pipeline requires the following hyper-parameters:
-- image path: the path of the TIFF image
-- marker file path: the path of the text file containing marker names
-- mask path: the path of the cell segmentation image
-- device: use CPU or GPU for computing
-- batch size: used for marker imputation and cell type prediction
-- main directory: the directory that all output files will be saved at
-- strict: whether to use the marker imputation feature, when it is False, the model will impute images of missing markers. default False.
-- normalize: whether to normalize the multiplexed image, default True. We recommend using this feature to ensure the image is normalized as expected, which is essential for cell type prediction
-- blur: whether to perform Gaussian blurring of the image in the preprocessing step, the default value is set to 0.5. The range of this value is expected to be 0 ~ 1.
-- confidence: the threshold used to determine if a cell type call is valid; if the prediction confidence is lower than this value, the model will predict that the cell image is "Others", the default value is set to 0.3. The larger this value, the more "Others" types will be annotated rather than valid cell types
-- cell type specific confidence: set threshold for each cell type explicitly rather than a unified confidence threshold above. To set this hyper-parameter, please directly edit it in the `hyperparameter.json` and select this file in the user interface.
+- **Image Path**: The path to the TIFF image.
+- **Marker File Path**: The path to the text file containing marker names.
+- **Mask Path**: The path to the cell segmentation image.
+- **Device**: Specify whether to use CPU or GPU for computation.
+- **Batch Size**: The batch size used for marker imputation and cell type prediction.
+- **Main Directory**: The directory where all output files will be saved.
+- **Strict**: Determines whether models with missing markers can be applied. When set to `False`, the model will impute or use blank channels for missing markers. When set to `True`, models with any missing markers cannot be applied. Default: `False`.
+- **Infer**: Enables the marker imputation feature. When set to `True`, the model will impute images for missing markers. Default: `True`.
+- **Normalize**: Controls whether the multiplexed image should be normalized. Default: `True`. We recommend enabling this to ensure proper normalization for accurate cell type prediction.
+- **Blur**: Specifies whether to apply Gaussian blurring during preprocessing. The default value is `0.5`, with an expected range of `0` to `1`.
+- **Upper Limit**: Defines the percentile value used as the upper threshold to clip each image channel based on its intensity values.
+- **Confidence**: The threshold for determining the validity of a cell type prediction. If the confidence is lower than this value, the model will classify the cell as "Others." The default value is `0.3`. Higher values will result in more "Others" annotations rather than valid cell types.
+- **Cell Size**: The estimated cell size in pixels for the query image.
+- **Cell Type-Specific Confidence**: Allows for setting confidence thresholds for individual cell types rather than using a unified value. This parameter should be edited directly in the `hyperparameter.json` file and selected in the user interface.
+
 
 All hyperparameters can be pre-determined and saved in the `hyperparameter.json` file. Select this file when using the plugin without re-entering it.
 
