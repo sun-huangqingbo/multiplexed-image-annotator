@@ -261,7 +261,7 @@ class BatchProcess(QWidget):
 
         new_lbl_txt = ""
         for idx, marker in enumerate(markers):
-            new_lbl_txt += f"{idx+1}. {marker}, "
+            new_lbl_txt += f"{idx}. {marker}, "
             # for the last element, do not have ,
             if idx == len(markers) - 1:
                 new_lbl_txt = new_lbl_txt[:-2]
@@ -551,7 +551,7 @@ class GUIIntegrater(QWidget):
 
             new_lbl_txt = ""
             for idx, marker in enumerate(self.markers):
-                new_lbl_txt += f"{idx+1}. {marker}, "
+                new_lbl_txt += f"{idx}. {marker}, "
                 # for the last element, do not have ,
                 if idx == len(self.markers) - 1:
                     new_lbl_txt = new_lbl_txt[:-2]
