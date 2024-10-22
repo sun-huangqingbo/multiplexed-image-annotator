@@ -572,6 +572,9 @@ class Annotator(object):
         
         else:
             raise ValueError("No predictions to merge")
+        
+        for i in range(len(self.annotations)):
+            assert len(self.annotations[i]) == len(self.preprocessor.cell_pos_dict[i].keys())
 
 
     def generate_heatmap(self, integrate=False):
@@ -656,8 +659,8 @@ class Annotator(object):
         for i in range(len(self.annotations)):
             f = os.path.join(self.result_dir, f"{self.batch_id}_annotation_{i}.txt")
             with open(f, "w") as file:
-                for j in range(len(self.annotations[i])):
-                    file.write(f"{j} {self.annotations[i][j]}\n")
+                for j, key in enumerate(self.preprocessor.cell_pos_dict[i].keys()):
+                    file.write(f"Cell {key}: {self.annotations[i][j]}\n")
 
     def colorize(self):
         colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255], [255, 0, 255], [255, 165, 0],
@@ -674,9 +677,9 @@ class Annotator(object):
             colormap = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
             colormap2 = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
             colormap3 = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.uint8)
-            for j in range(1, mask.max() + 1):
+            for j, key in enumerate(self.preprocessor.cell_pos_dict[i].keys()):
                 celltype_pred = self.cell_types.index(self.annotations[i][j - 1])
-                row, col = self.preprocessor.cell_pos_dict[i][j]
+                row, col = self.preprocessor.cell_pos_dict[i][key]
                 colormap[row, col, :] = colors[celltype_pred]
                 colormap2[row, col, :] = self.confidence[i][j - 1]
                 colormap3[row, col] = celltype_pred + 1
@@ -768,8 +771,8 @@ class Annotator(object):
         
         if integrate:
             neighborhood = np.zeros((len(self.applied_cell_types), len(self.applied_cell_types)))
-            for i in range(len(self.annotations)):
-                coordinates = self.preprocessor.cell_pos_dict[i]
+            for i, key in enumerate(self.preprocessor.cell_pos_dict.keys()):
+                coordinates = self.preprocessor.cell_pos_dict[key]
                 # to array
                 coordinates = [[np.mean(coordinates[k][0]), np.mean(coordinates[k][1])] for k in sorted(coordinates.keys())]
                 assert len(coordinates) == len(self.annotations[i])
@@ -803,9 +806,9 @@ class Annotator(object):
 
                         
         else:
-            for i in range(len(self.annotations)):
+            for i, key in enumerate(self.preprocessor.cell_pos_dict.keys()):
                 neighborhood = np.zeros((len(self.applied_cell_types), len(self.applied_cell_types)))
-                coordinates = self.preprocessor.cell_pos_dict[i]
+                coordinates = self.preprocessor.cell_pos_dict[key]
                 # to array
                 coordinates = [[np.mean(coordinates[k][0]), np.mean(coordinates[k][1])] for k in sorted(coordinates.keys())]
                 assert len(coordinates) == len(self.annotations[i])

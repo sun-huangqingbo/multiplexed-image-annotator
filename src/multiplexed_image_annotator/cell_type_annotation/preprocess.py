@@ -61,7 +61,7 @@ class ImageProcessor(object):
         intensity_all = []
         if int_full:
             intensity_full = []
-        for c in cell_index:
+        for j, c in enumerate(cell_index):
             patch, avg_int = self._crop_cell(img_zero, mask, min_val, c, cell_pos_dict, patch_size)
             # rescale
             patch = resize(patch, (patch.shape[0], 40, 40), anti_aliasing=True, order=0, preserve_range=True)
@@ -81,7 +81,7 @@ class ImageProcessor(object):
             else:
                 patch = patch[channel_index, :, :]
                 avg_int = avg_int[channel_index]
-            temp[c-1] = patch
+            temp[j] = patch
             intensity_all.append(avg_int)
 
         
