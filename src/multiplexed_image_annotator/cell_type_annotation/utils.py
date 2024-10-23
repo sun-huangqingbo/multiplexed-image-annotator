@@ -7,9 +7,27 @@ from skimage import filters
 from skimage.morphology import dilation, disk
 from skimage.io import imread
 import torch
-from .model import Annotator
-import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 
+def number_to_rgb(value, cmap_name='viridis'):
+    if value < 0 or value > 1:
+        raise ValueError("Value must be between 0 and 1")
+
+    cmap = plt.get_cmap(cmap_name)
+    norm = mcolors.Normalize(vmin=0, vmax=1)
+
+    # Get the RGB color code
+    rgb = cmap(norm(value))[:3]  # Ignore the alpha value
+
+    rgb_255 = list(int(x * 255) for x in rgb)
+
+    return rgb_255
+
+def get_void_vote():
+    return {"CD4 T cell": 0, "CD8 T cell": 0, "Dendritic cell": 0, "B cell": 0, "M1 macrophage cell": 0, 
+                "M2 macrophage cell": 0, "Regulatory T cell": 0, "Granulocyte cell": 0, "Plasma cell": 0, "Natural killer cell": 0, "Mast cell": 0,
+                "Stroma cell": 0 , "Smooth muscle": 0, "Endothelial cell": 0, "Epithelial cell": 0, "Proliferating/tumor cell": 0, "Nerve cell": 0}
 
 # This function crops cell with cell_id:position_index dictionary
 def crop_cell(dict,img,mask,save_path,file_name,cell_index=None, channel_index=None,margin=12,patch_size=40,save_tensor=False,csv_save_path=None):
@@ -128,41 +146,3 @@ def smooth(mask,c):
     return smooth
 
 
-
-def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence):
-
-    # write image and mask paths to a csv file
-    temp = [[image_path, mask_path]]
-    pd.DataFrame(temp).to_csv(main_dir + "images.csv", index=False, header=["image_path", "mask_path"])
-    
-    path_ = main_dir + "images.csv"
-    annotator = Annotator(marker_list_path, path_, device, main_dir, batch_id, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
-    if not annotator.channel_parser.immune_base and not annotator.channel_parser.immune_extended and not annotator.channel_parser.immune_full and not annotator.channel_parser.struct and not annotator.channel_parser.nerve:
-        raise ValueError("No panels are applied. Please check the marker list.")
-    annotator.preprocess()
-    annotator.predict(bs)
-    annotator.generate_heatmap(integrate=True)
-    annotator.export_annotations()
-    annotator.colorize()
-    annotator.cell_type_composition()
-    annotator.clear_tmp()
-
-    intensity_dict = {}
-    for i in range(len(annotator.preprocessor.intensity_full[0])):
-        intensity_dict[i + 1] = annotator.preprocessor.intensity_full[0][i]
-    intensity_dict[0] = np.zeros_like(annotator.preprocessor.intensity_full[0][0])
-    return intensity_dict
-    
-
-def gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence):
-    annotator = Annotator(marker_list_path, image_path, device, main_dir, batch_id, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
-    if not annotator.channel_parser.immune_base and not annotator.channel_parser.immune_extended and not annotator.channel_parser.immune_full and not annotator.channel_parser.struct and not annotator.channel_parser.nerve:
-        raise ValueError("No panels are applied. Please check the marker list.")
-    annotator.preprocess()
-    annotator.predict(bs)
-    annotator.generate_heatmap(integrate=True)
-    annotator.export_annotations()
-    annotator.colorize()
-    annotator.cell_type_composition()
-    annotator.clear_tmp()
-    
