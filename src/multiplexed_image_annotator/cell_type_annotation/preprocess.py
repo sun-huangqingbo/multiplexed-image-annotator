@@ -245,7 +245,7 @@ class ImageProcessor(object):
                     print("Imputer for {} is created".format(panel))
                     msg = "Imputer for {} is created. Marker(s) ".format(panel)
                     for ii in range(len(idx)):
-                        if ii == -1:
+                        if index[ii] == -1:
                             msg += "{} ".format(self.parser.panels[panel][ii])
                     msg += "are imputed."
                     self.logger.log(msg)

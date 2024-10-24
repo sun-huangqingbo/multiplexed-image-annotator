@@ -615,6 +615,7 @@ class Annotator(object):
                 colormap[j] = np.mean(temp, axis=0)
             # save the heatmap
             f = os.path.join(self.result_dir, f"{self.batch_id}_Integrated_heatmap.png")
+            plt.figure(figsize=(colormap.shape[1] // 4, colormap.shape[0] // 4))
             sns.heatmap(colormap, cmap='vlag', xticklabels=self.channel_parser.markers, yticklabels=celltypes, linewidth=.5)
             plt.tight_layout()
             plt.savefig(f)
