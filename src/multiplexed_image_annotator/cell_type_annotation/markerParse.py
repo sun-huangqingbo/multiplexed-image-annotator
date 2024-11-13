@@ -68,9 +68,10 @@ class MarkerParser():
                         'CD3e': 'CD3', 'CK': 'PanCK', 'CytoKeratin': 'PanCK', 'Cytokeratin': 'PanCK', 'Cytokeratin-19': 'PanCK', 'panCK': 'PanCK'}
         # replace the markers
         for i in range(len(marker_list)):
-            if marker_list[i] in replacements:
+            if marker_list[i] in replacements and replacements[marker_list[i]] not in marker_list:
+                old_marker = marker_list[i]
                 marker_list[i] = replacements[marker_list[i]]
-                self.logger.log(f"Replaced the marker name {replacements[marker_list[i]]} with {marker_list[i]} to match our panel.")
+                self.logger.log(f"Replaced the marker name {old_marker} with {marker_list[i]} to match our panel.")
         self.logger.log("")
 
         marker_list = list(marker_list)
