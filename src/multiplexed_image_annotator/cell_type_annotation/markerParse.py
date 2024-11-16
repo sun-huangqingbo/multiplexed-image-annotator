@@ -30,7 +30,7 @@ class MarkerParser():
     def _matching(self, marker_list, panel, panel_name):
         matched = []
         missing = []
-        thresh = {"immune_base": 1, "immune_extended": 2, "immune_full": 2, "structure": 1, "nerve_cell": 0}
+        thresh = {"immune_base": 1, "immune_extended": 2, "immune_full": 3, "structure": 1, "nerve_cell": 0}
         for marker in panel:
             if marker in marker_list:
                 # find the index of the marker in the marker_list
@@ -74,8 +74,10 @@ class MarkerParser():
             if marker_list[i] in replacements and replacements[marker_list[i]] not in marker_list:
                 old_marker = marker_list[i]
                 marker_list[i] = replacements[marker_list[i]]
-                self.logger.log(f"Replaced the marker name {old_marker} with {marker_list[i]} to match our panel.")
-        self.logger.log("")
+                if self.logger:
+                    self.logger.log(f"Replaced the marker name {old_marker} with {marker_list[i]} to match our panel.")
+        if self.logger:
+            self.logger.log("")
 
 
         marker_list = list(marker_list)
@@ -105,27 +107,3 @@ class MarkerParser():
             self.struct = True
         if self.indices['nerve_cell']:
             self.nerve = True
-
-        # if self.immune_full:
-        #     for marker in self.panels['immune_full']:
-        #         if marker not in self.markers:
-        #             self.markers.append(marker)
-        # if self.immune_extended:
-        #     for marker in self.panels['immune_extended']:
-        #         if marker not in self.markers:
-        #             self.markers.append(marker)
-        # if self.immune_base:
-        #     for marker in self.panels['immune_base']:
-        #         if marker not in self.markers:
-        #             self.markers.append(marker)
-        # if self.struct:
-        #     for marker in self.panels['structure']:
-        #         if marker not in self.markers:
-        #             self.markers.append(marker)
-        # if self.nerve:
-        #     for marker in self.panels['nerve_cell']:
-        #         if marker not in self.markers:
-        #             self.markers.append(marker)
-        
-
-
