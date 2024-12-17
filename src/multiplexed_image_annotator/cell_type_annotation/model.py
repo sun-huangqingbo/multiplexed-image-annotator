@@ -17,8 +17,10 @@ from .markerParse import MarkerParser
 from .preprocess import ImageProcessor
 from .logger import Logger
 from .utils import *
+from .spatial_methods import _tissue_region_partition
 
 from sklearn.neighbors import NearestNeighbors
+from sklearn.cluster import KMeans, HDBSCAN
 
 import umap
 
@@ -89,13 +91,12 @@ class Annotator(object):
     """
     Annotator class to predict cell types and tissue structures using the provided models
     """
-    def __init__(self, marker_list_path, image_path, device, main_dir = './', batch_id='', strict=True, infer=True, normalization=True, blur=False, amax=1, confidence=0.25, cell_size = 30, cell_type_confidence=None):
+    def __init__(self, marker_list_path, image_path, device, main_dir = './', batch_id='', strict=True, infer=True, min_cells=-1, normalize=True, blur=False, amax=1, confidence=0.25, cell_size = 30, cell_type_confidence=None):
         self.device = device
         self.cell_types = ["B cell", "CD4 T cell", "CD8 T cell", "Dendritic cell", "Regulatory T cell", "Granulocyte cell", 
                            "Mast cell", "M1 macrophage cell", "M2 macrophage cell", "Natural killer cell", "Plasma cell",
                            "Endothelial cell", "Epithelial cell", "Stroma cell", "Smooth muscle", "Proliferating/tumor cell", "Nerve cell", "Others"]
-        
-        self.applied_cell_types = ["Others"]
+
 
         self.batch_id = batch_id
 
@@ -104,7 +105,7 @@ class Annotator(object):
         hyperparameters = {
             "Batch name": batch_id,
             "Strictly match panel(s)": strict,
-            "Normalize image(s)": normalization,
+            "Normalize image(s)": normalize,
             "Image blurring kernel size": blur,
             "Percentile of intensity to upper clip": amax,
             "Confidence threshold": confidence,
@@ -120,10 +121,11 @@ class Annotator(object):
 
         self.channel_parser.parse(marker_list_path)
 
-        self.preprocessor = ImageProcessor(image_path, self.channel_parser, main_dir, device, batch_id, infer, normalization, blur, amax, cell_size, self.logger)
+        self.preprocessor = ImageProcessor(image_path, self.channel_parser, main_dir, device, batch_id, infer, normalize, blur, amax, cell_size, self.logger)
         self._loaded = False
 
         self._n_images = 0
+        self.min_cells = min_cells
 
         self.annotations = []
         self.confidence = []
@@ -145,6 +147,8 @@ class Annotator(object):
         self.nerve_pred_II = []
 
         self.confidence_thresh = confidence
+
+        self.extra_cell_types = self.min_cells > 0 
 
         self.temp_dir = os.path.join(main_dir, "tmp")
         self.result_dir = os.path.join(main_dir, "results")
@@ -297,9 +301,6 @@ class Annotator(object):
                 celltype_dict = {0: "CD4 T cell", 1: "CD8 T cell", 2: "Dendritic cell", 3: "B cell", 4: "M1 macrophage cell",
                                     5: "M2 macrophage cell", 6: "Natural killer cell", 7: "Others"}
                 
-                for c in celltype_dict.values():
-                    if c not in self.applied_cell_types and c != "Others":
-                        self.applied_cell_types.append(c)
                 
                 pred = []
                 for j in range(len(temp)):
@@ -371,10 +372,6 @@ class Annotator(object):
 
                 celltype_dict = {0: "Stroma cell" , 1: "Smooth muscle", 2: "Endothelial cell", 3: "Epithelial cell", 4: "Proliferating/tumor cell", 5: "Others"}
 
-                for c in celltype_dict.values():
-                    if c not in self.applied_cell_types and c != "Others":
-                        self.applied_cell_types.append(c)
-
                 pred = []
 
                 for j in range(len(temp)):
@@ -410,10 +407,6 @@ class Annotator(object):
 
                 celltype_dict = {0: "Nerve cell", 1: "Others"}
 
-                for c in celltype_dict.values():
-                    if c not in self.applied_cell_types and c != "Others":
-                        self.applied_cell_types.append(c)
-
                 pred = []
 
                 for j in range(len(temp)):
@@ -429,13 +422,18 @@ class Annotator(object):
                 self.logger.log("No nerve cell model to predict")
 
         self.merge_by_voting()
+
+        self.cell_types = self._get_unique_cell_types()
+        # move Others to the end
+        self.cell_types = np.delete(self.cell_types, np.where(self.cell_types == "Others"))
+        self.cell_types = np.append(self.cell_types, "Others")
+        self.colors = get_colors(len(self.cell_types))
+        # save legend
+        colors = {f"{self.cell_types[i]}": rgb_to_hex(self.colors[i]) for i in range(len(self.cell_types))}
+        color_legend(self.result_dir, colors)
                 
 
     def merge_by_voting(self):
-        msg = ""
-        for c in self.applied_cell_types:
-            msg += f"{c}, "
-        msg = msg[:-2] + " are annotated."
 
         # full
         if len(self.immune_full_pred) > 0 and len(self.struct_pred) > 0 and len(self.nerve_pred) > 0:
@@ -593,8 +591,38 @@ class Annotator(object):
         else:
             raise ValueError("No predictions to merge")
         
+        if self.extra_cell_types:
+            self._find_extra_cell_types(min_samples=self.min_cells)
+        
+
+    def _find_extra_cell_types(self, root_cell_type="Others", min_samples=10):
+        # cluster others
+        intensity_others = []
+        indices = []
         for i in range(len(self.annotations)):
-            assert len(self.annotations[i]) == len(self.preprocessor.cell_pos_dict[i].keys())
+            for j in range(len(self.annotations[i])):
+                # get its intensity
+                if self.annotations[i][j] == root_cell_type:
+                    intensity_others.append(self.preprocessor.intensity_full[i][j])
+                    indices.append([i, j])
+
+        if len(intensity_others) > 0:
+            intensity_others = np.array(intensity_others)
+            reducer = umap.UMAP(n_components=5)
+            embedding = reducer.fit_transform(intensity_others)
+            # kmeans = KMeans(n_clusters=3, random_state=0).fit(embedding)
+            clustering_model = HDBSCAN(min_cluster_size=min_samples).fit(embedding)
+            for i in range(len(clustering_model.labels_)):
+                if clustering_model.labels_[i] != -1:
+                    self.annotations[indices[i][0]][indices[i][1]] = f"Additional type {clustering_model.labels_[i]}"
+                    self.confidence[indices[i][0]][indices[i][1]] = [192, 192, 192]
+                else:
+                    self.annotations[indices[i][0]][indices[i][1]] = "Others"
+                    self.confidence[indices[i][0]][indices[i][1]] = [192, 192, 192]
+            
+
+    def _get_unique_cell_types(self):
+        return np.unique(self.annotations)
 
 
     def generate_heatmap(self, integrate=False):
@@ -648,25 +676,18 @@ class Annotator(object):
         intensity_full = self.preprocessor.intensity_full
         intensity_full = np.concatenate(intensity_full, axis=0)
 
-        hex_colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#00FFFF", "#FF00FF", "#FFA500",
-              "#800080", "#FFC0CB", "#008080", "#32CD32", "#4B0082", "#808000", "#800000",
-              "#000080", "#FFD700", "#EE82EE", "#C0C0C0"]
-        colors = {f"{self.cell_types[i]}": hex_colors[i] for i in range(len(self.cell_types))}
-        
+        colors = {f"{self.cell_types[i]}": rgb_to_hex(self.colors[i]) for i in range(len(self.cell_types))}
         annotations = []
         for i in range(len(self.annotations)):
             annotations += self.annotations[i]
         assert len(intensity_full) == len(annotations)
-        # z-score normalization
-        intensity_full = (intensity_full - intensity_full.mean(axis=0)) / intensity_full.std(axis=0)
 
-        # umap visualization
         reducer = umap.UMAP()
         embedding = reducer.fit_transform(intensity_full)
         f = os.path.join(self.result_dir, f"{self.batch_id}_umap.png")
-        sns.scatterplot(x=embedding[:, 0], y=embedding[:, 1], hue=annotations, palette=colors, marker=".", s=8)
-        # plt.legend(loc="best")
-        plt.tight_layout()
+        sns.scatterplot(x=embedding[:, 0], y=embedding[:, 1], hue=annotations, palette=colors, marker=".", s=15)
+        # legend off
+        plt.legend([],[], frameon=False)
         plt.savefig(f)
         plt.close()
                 
@@ -674,16 +695,34 @@ class Annotator(object):
     def export_annotations(self):
         if len(self.annotations) == 0:
             raise ValueError("No annotations to export")
+        all_annotations = []
+
         for i in range(len(self.annotations)):
+            temp = []
             f = os.path.join(self.result_dir, f"{self.batch_id}_annotation_{i}.txt")
             with open(f, "w") as file:
                 for j, key in enumerate(self.preprocessor.cell_pos_dict[i].keys()):
                     file.write(f"Cell {key}: {self.annotations[i][j]}\n")
+                    cell_type_int = np.where(self.cell_types == self.annotations[i][j])[0][0]
+                    conf = self.confidence[i][j]
+                    # get coordinates
+                    row, col = self.preprocessor.cell_pos_dict[i][j + 1]
+
+                    dict_ = {"Cell ID": key, "Cell type": cell_type_int, "Confidence": conf, "Row": row, "Column": col}
+                    temp.append(dict_)
+                all_annotations.append(temp)
+
+        f = os.path.join(self.temp_dir, f"{self.batch_id}_annotation.pkl")
+        with open(f, "wb") as file:
+            pickle.dump(all_annotations, file)
+                
+    def tissue_region_analysis(self, n):
+        self.n_regions = n
+        f = os.path.join(self.temp_dir, f"{self.batch_id}_annotation.pkl")
+        self.tissue_regions = _tissue_region_partition(n, f)
 
     def colorize(self):
-        colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255], [255, 0, 255], [255, 165, 0],
-                    [128, 0, 128], [255, 192, 203], [0, 128, 128], [50, 205, 50], [75, 0, 130], [128, 128, 0], [128, 0, 0],
-                    [0, 0, 128], [255, 215, 0], [238, 130, 238], [192, 192, 192]]
+        colors = self.colors
         if len(self.preprocessor.masks) == 0:
             raise ValueError("No masks to colorize")
         if len(self.annotations) == 0:
@@ -695,12 +734,19 @@ class Annotator(object):
             colormap = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
             colormap2 = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
             colormap3 = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.uint8)
-            for j, key in enumerate(self.preprocessor.cell_pos_dict[i].keys()):
-                celltype_pred = self.cell_types.index(self.annotations[i][j - 1])
-                row, col = self.preprocessor.cell_pos_dict[i][key]
+
+            tissuemap = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
+            tissuemap2 = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.uint8)
+            tissue_colors = get_colors(self.n_regions)
+            for j in range(1, mask.max() + 1):
+                celltype_pred = np.where(self.cell_types == self.annotations[i][j - 1])[0][0]
+                row, col = self.preprocessor.cell_pos_dict[i][j]
                 colormap[row, col, :] = colors[celltype_pred]
                 colormap2[row, col, :] = self.confidence[i][j - 1]
                 colormap3[row, col] = celltype_pred + 1
+
+                tissuemap[row, col, :] = tissue_colors[self.tissue_regions[i][j]]
+                tissuemap2[row, col] = self.tissue_regions[i][j] + 1
             
             # save the colorized mask
             f = os.path.join(self.result_dir, f"{self.batch_id}_colorized_annotation_{i}.png")
@@ -712,19 +758,20 @@ class Annotator(object):
             f = os.path.join(self.result_dir, f"{self.batch_id}_confidence_{i}.png")
             Image.fromarray(colormap2).save(f)
 
+            f = os.path.join(self.result_dir, f"{self.batch_id}_tissue_region_{i}.png")
+            Image.fromarray(tissuemap).save(f)
+
+            f = "./src/multiplexed_image_annotator/cell_type_annotation/_working_dir_temp/output_img_2.png"
+            Image.fromarray(tissuemap2).save(f)
 
 
     def cell_type_composition(self, reduction=True, integrate=False):
         if len(self.annotations) == 0:
             raise ValueError("No annotations to analyze")
         
-        hex_colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#00FFFF", "#FF00FF", "#FFA500",
-              "#800080", "#FFC0CB", "#008080", "#32CD32", "#4B0082", "#808000", "#800000",
-              "#000080", "#FFD700", "#EE82EE", "#C0C0C0"]
-        
         if integrate:
             N = 0
-            composition = {k: 0 for k in self.applied_cell_types}
+            composition = {k: 0 for k in self.cell_types}
             for i in range(len(self.annotations)):
                 for j in range(len(self.annotations[i])):
                     composition[self.annotations[i][j]] += 1
@@ -732,15 +779,10 @@ class Annotator(object):
             if reduction:
                 for k in composition:
                     composition[k] /= N
-            
-            # f = os.path.join(self.result_dir, f"{self.batch_id}_integrated_cell-type_composition.txt")
-            # with open(f, "w") as file:
-            #     for k in composition:
-            #         file.write(f"{k} {composition[k]}\n")
 
             fig = plt.figure()
             ax = fig.add_subplot(111)
-            colors = [hex_colors[self.cell_types.index(k)] for k in composition.keys()]
+            colors = [rgb_to_hex(self.colors[i]) for i in range(len(self.colors))]
             ax.pie(composition.values(), colors=colors)
             legend = [f"{k} ({composition[k] * 100:.2f} %)" for k in composition.keys()]
             # put legend outside the plot
@@ -754,21 +796,18 @@ class Annotator(object):
         else:
             for i in range(len(self.annotations)):
                 N = 0
-                temp = {k: 0 for k in self.applied_cell_types}
+                temp = {k: 0 for k in self.cell_types}
                 for j in range(len(self.annotations[i])):
                     temp[self.annotations[i][j]] += 1
                     N += 1
                 if reduction:
                     for k in temp:
                         temp[k] /= N
-                # f = os.path.join(self.result_dir, f"{self.batch_id}_cell-type_composition_{i}.txt")
-                # with open(f, "w") as file:
-                #     for k in temp:
-                #         file.write(f"{k} {temp[k]}\n")  
+
 
                 fig = plt.figure()
                 ax = fig.add_subplot(111)
-                colors = [hex_colors[self.cell_types.index(k)] for k in temp.keys()]
+                colors = [rgb_to_hex(self.colors[i]) for i in range(len(self.colors))]
                 ax.pie(temp.values(), colors=colors)
                 legend = [f"{k} ({temp[k] * 100:.2f} %)" for k in temp.keys()]
                 # put legend outside the plot
@@ -779,85 +818,6 @@ class Annotator(object):
                 plt.savefig(f)
                 plt.close()
 
-    def neighborhood_analysis(self, n_neighbors=10, integrate=False, normalize=True):
-        colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#00FFFF", "#FF00FF", "#FFA500",
-              "#800080", "#FFC0CB", "#008080", "#32CD32", "#4B0082", "#808000", "#800000",
-              "#000080", "#FFD700", "#EE82EE", "#C0C0C0"]
-        colors = {k: colors[i] for i, k in enumerate(self.cell_types)}
-        # only applied cell types
-        colors = {k: colors[k] for k in self.applied_cell_types}
-        
-        if integrate:
-            neighborhood = np.zeros((len(self.applied_cell_types), len(self.applied_cell_types)))
-            for i, key in enumerate(self.preprocessor.cell_pos_dict.keys()):
-                coordinates = self.preprocessor.cell_pos_dict[key]
-                # to array
-                coordinates = [[np.mean(coordinates[k][0]), np.mean(coordinates[k][1])] for k in sorted(coordinates.keys())]
-                assert len(coordinates) == len(self.annotations[i])
-                # fit the nearest neighbors
-                nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='ball_tree').fit(coordinates)
-                for j in range(len(self.annotations[i])):
-                    indices = nbrs.kneighbors([coordinates[j]], return_distance=False)[0]
-                    for k in indices[1:]:
-                        neighborhood[self.applied_cell_types.index(self.annotations[i][j]), self.applied_cell_types.index(self.annotations[i][k])] += 1
-            # normalize
-            if normalize:
-                for i in range(len(neighborhood)):
-                    if neighborhood[i].sum() > 0:
-                        neighborhood[i] /= neighborhood[i].sum()
-            # plot
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            ax.set_title("Integrated neighborhood analysis")
-            labels = self.applied_cell_types
-            sns.heatmap(neighborhood, xticklabels=labels, yticklabels=labels, cmap="vlag", linewidth=.5)
-            plt.xticks(rotation=60)
-            plt.tight_layout()
-            f = os.path.join(self.result_dir, f"{self.batch_id}_integrated_neighborhood.png")
-            plt.savefig(f)
-            plt.close()
-
-            # pickle the neighborhood
-            f = os.path.join(self.result_dir, f"{self.batch_id}_integrated_neighborhood.pkl")
-            with open(f, "wb") as file:
-                pickle.dump(neighborhood, file)
-
-                        
-        else:
-            for i, key in enumerate(self.preprocessor.cell_pos_dict.keys()):
-                neighborhood = np.zeros((len(self.applied_cell_types), len(self.applied_cell_types)))
-                coordinates = self.preprocessor.cell_pos_dict[key]
-                # to array
-                coordinates = [[np.mean(coordinates[k][0]), np.mean(coordinates[k][1])] for k in sorted(coordinates.keys())]
-                assert len(coordinates) == len(self.annotations[i])
-                # fit the nearest neighbors
-                nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='ball_tree').fit(coordinates)
-                for j in range(len(self.annotations[i])):
-                    indices = nbrs.kneighbors([coordinates[j]], return_distance=False)[0]
-                    for k in indices[1:]:
-                        neighborhood[self.applied_cell_types.index(self.annotations[i][j]), self.applied_cell_types.index(self.annotations[i][k])] += 1
-                # normalize
-                if normalize:
-                    for ii in range(len(neighborhood)):
-                        if neighborhood[ii].sum() > 0:
-                            neighborhood[ii] /= neighborhood[ii].sum()
-                # plot
-                fig = plt.figure()
-                ax = fig.add_subplot(111)
-                ax.set_title(f"Neighborhood analysis {i}")
-                labels = self.applied_cell_types
-                sns.heatmap(neighborhood, xticklabels=labels, yticklabels=labels, cmap="vlag", linewidth=.5)
-                plt.xticks(rotation=60)
-                plt.tight_layout()
-                f = os.path.join(self.result_dir, f"{self.batch_id}_neighborhood_{i}.png")
-                plt.savefig(f)
-                plt.close()
-
-
-                # pickle the neighborhood
-                f = os.path.join(self.result_dir, f"{self.batch_id}_neighborhood_{i}.pkl")
-                with open(f, "wb") as file:
-                    pickle.dump(neighborhood, file)
             
     def clear_tmp(self):
         for f in os.listdir(self.temp_dir):

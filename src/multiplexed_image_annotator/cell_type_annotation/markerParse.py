@@ -36,19 +36,25 @@ class MarkerParser():
                 # find the index of the marker in the marker_list
                 matched.append(marker_list.index(marker))
             else:
+                if marker == "CD20":
+                    marker_ = "CD20 or CD79a"
+                elif marker == "GFAP":
+                    marker_ = "GFAP or Chromogranin A"
+                elif marker == "CD138":
+                    marker_ = "CD138 or CD38"
+                else:
+                    marker_ = marker
                 if not self.strict and len(panel) > 3:
-                    missing.append(marker)
+                    missing.append(marker_)
                     matched.append(-1)
                     if len(missing) > thresh[panel_name]:
                         str_missing = ', '.join(missing)
                         print(f"Markers {str_missing} are not found in the list, ", end="")
-                        if self.logger:
-                            self.logger.log(f"Markers {str_missing} are not found in the list.")
+                        self.logger.log(f"Markers {str_missing} are not found in the list.")
                         return None
                 else:
-                    print(f"Marker {marker} is not found in the list, ", end="")
-                    if self.logger:
-                        self.logger.log(f"Marker {marker} is not found in the list.")
+                    print(f"Marker {marker_} is not found in the list, ", end="")
+                    self.logger.log(f"Marker {marker_} is not found in the list.")
                     return None
 
         return matched

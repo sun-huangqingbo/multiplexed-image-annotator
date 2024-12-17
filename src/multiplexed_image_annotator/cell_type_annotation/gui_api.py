@@ -10,20 +10,21 @@ import pandas as pd
 import numpy as np
 
 
-def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence):
+def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence):
 
     # write image and mask paths to a csv file
     temp = [[image_path, mask_path]]
     pd.DataFrame(temp).to_csv(os.path.join(main_dir, "images.csv"), index=False, header=["image_path", "mask_path"])
     
     path_ = os.path.join(main_dir, "images.csv")
-    annotator = Annotator(marker_list_path, path_, device, main_dir, batch_id, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
+    annotator = Annotator(marker_list_path, path_, device, main_dir, batch_id, strict, infer, min_cells, normalize, blur, amax, confidence, cell_size, cell_type_confidence)
     if not annotator.channel_parser.immune_base and not annotator.channel_parser.immune_extended and not annotator.channel_parser.immune_full and not annotator.channel_parser.struct and not annotator.channel_parser.nerve:
         raise ValueError("No panels are applied. Please check the marker list.")
     annotator.preprocess()
     annotator.predict(bs)
     annotator.generate_heatmap(integrate=True)
     annotator.export_annotations()
+    annotator.tissue_region_analysis(n_regions)
     annotator.colorize()
     annotator.cell_type_composition()
     annotator.clear_tmp()
@@ -35,14 +36,15 @@ def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id,
     return intensity_dict
     
 
-def gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence):
-    annotator = Annotator(marker_list_path, image_path, device, main_dir, batch_id, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
+def gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence):
+    annotator = Annotator(marker_list_path, image_path, device, main_dir, batch_id, strict, infer, min_cells, normalize, blur, amax, confidence, cell_size, cell_type_confidence)
     if not annotator.channel_parser.immune_base and not annotator.channel_parser.immune_extended and not annotator.channel_parser.immune_full and not annotator.channel_parser.struct and not annotator.channel_parser.nerve:
         raise ValueError("No panels are applied. Please check the marker list.")
     annotator.preprocess()
     annotator.predict(bs)
     annotator.generate_heatmap(integrate=True)
     annotator.export_annotations()
+    annotator.tissue_region_analysis(n_regions)
     annotator.colorize()
     annotator.cell_type_composition()
     annotator.clear_tmp()
@@ -62,7 +64,9 @@ def gui_api(working_addr):
     batch_id = "single_run"
     strict = hyperparameters.get('strict')
     infer = hyperparameters.get('infer')
-    normalization = hyperparameters.get('normalize')
+    min_cells = hyperparameters.get('min_cells')
+    n_regions = hyperparameters.get('n_regions')
+    normalize = hyperparameters.get('normalize')
     blur = hyperparameters.get('blur')
     amax = hyperparameters.get('upper_limit')
     confidence = hyperparameters.get('confidence')
@@ -70,7 +74,7 @@ def gui_api(working_addr):
     bs = hyperparameters.get('batch_size')
     cell_size = hyperparameters.get('cell_size')
 
-    img = gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
+    img = gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence)
 
     return img
 
@@ -85,7 +89,9 @@ def batch_process(working_dir):
     batch_id = hyperparameters.get('batch_id')
     strict = hyperparameters.get('strict')
     infer = hyperparameters.get('infer')
-    normalization = hyperparameters.get('normalize')
+    min_cells = hyperparameters.get('min_cells')
+    n_regions = hyperparameters.get('n_regions')
+    normalize = hyperparameters.get('normalize')
     blur = hyperparameters.get('blur')
     amax = hyperparameters.get('upper_limit')
     confidence = hyperparameters.get('confidence')
@@ -93,7 +99,7 @@ def batch_process(working_dir):
     bs = hyperparameters.get('batch_size')
     cell_size = hyperparameters.get('cell_size')
 
-    gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, infer, normalization, blur, amax, confidence, cell_size, cell_type_confidence)
+    gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence)
     f = f"{working_dir}/output.txt"
     with open(f, "w") as file:
         file.write("Batch process completed")
