@@ -361,6 +361,11 @@ class GUIIntegrater(QWidget):
             shutil.rmtree(working_dir)
         self.update_status_txt("You do not have running jobs.")
         self.update_call_btn(True)
+
+        # TODO: if the algorithm returns a string, update your string with the function below
+        new_cell_types_txt = "We obtained some cell types from the algorithm."
+        self.update_cell_types_txt(new_cell_types_txt)
+
         show_info("Your job is done! The output image is loaded.")
 
 
@@ -618,6 +623,9 @@ class GUIIntegrater(QWidget):
             self.params_panel.call_button.show()
         else:
             self.params_panel.call_button.hide()
+
+    def update_cell_types_txt(self, txt):
+        self.cell_types_txt.setText(txt)
 
     def handle_delete_file(self, event):
 
