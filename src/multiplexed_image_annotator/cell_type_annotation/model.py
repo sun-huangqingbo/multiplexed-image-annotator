@@ -624,7 +624,7 @@ class Annotator(object):
     def _get_unique_cell_types(self):
         return np.unique(self.annotations)
     
-    def _get_cell_type_names(self):
+    def get_cell_type_names(self):
         txt = ""
         for i in range(len(self.cell_types)):
             txt += f"{i}: {self.cell_types[i]}"

@@ -33,7 +33,9 @@ def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id,
     for i in range(len(annotator.preprocessor.intensity_full[0])):
         intensity_dict[i + 1] = annotator.preprocessor.intensity_full[0][i]
     intensity_dict[0] = np.zeros_like(annotator.preprocessor.intensity_full[0][0])
-    return intensity_dict, annotator._get_cell_type_names()
+    names = annotator.get_cell_type_names()
+    print(names)
+    return intensity_dict, names
     
 
 def gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence):
