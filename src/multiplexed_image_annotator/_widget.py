@@ -360,7 +360,7 @@ class GUIIntegrater(QWidget):
         try: 
             output_img = imageio.imread(output_addr)
             output_img_2 = imageio.imread(output_addr_2)
-            self.viewer.add_labels(output_img, name="cell_type")
+            self.viewer.add_labels(output_img, name="cell_type_map")
             self.viewer.add_labels(output_img_2, name="tissue_region")
         except:
             print("output_img reading error")

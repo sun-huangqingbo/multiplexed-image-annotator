@@ -622,13 +622,21 @@ class Annotator(object):
             
 
     def _get_unique_cell_types(self):
-        return np.unique(self.annotations)
+        # use set to get unique cell types
+        cell_types = set()
+        for i in range(len(self.annotations)):
+            cell_types.update(self.annotations[i])
+        # sort the cell types
+        cell_types = np.array(list(cell_types))
+        cell_types = np.sort(cell_types)
+        return cell_types
+     
     
     def get_cell_type_names(self):
         txt = ""
         for i in range(len(self.cell_types)):
-            txt += f"{i}: {self.cell_types[i]}"
-            if i % 5 == 4:
+            txt += f"{i+1}: {self.cell_types[i]}"
+            if i % 3 == 2:
                 txt += "\n"
             else:
                 txt += "  "

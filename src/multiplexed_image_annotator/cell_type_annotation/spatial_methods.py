@@ -91,14 +91,15 @@ def _neighborhood_analysis(self, n_neighbors=10, cell_types=None, integrate=Fals
 def _tissue_region_partition(n_clusters=3, f=None):
     # Load the data
     annotation_all = pickle.load(open(f, "rb"))
-    x_coords = []
-    y_coords = []
-    celltypes = []
-    cell_id = []
+
 
     tissue_labels = []
     for i in range(len(annotation_all)):
         tissue_labels.append({})
+        x_coords = []
+        y_coords = []
+        celltypes = []
+        cell_id = []
         for j in range(len(annotation_all[i])):
             x_coords.append(np.mean(annotation_all[i][j]["Column"]))
             y_coords.append(np.mean(annotation_all[i][j]["Row"]))
@@ -110,7 +111,7 @@ def _tissue_region_partition(n_clusters=3, f=None):
         y_coords = np.array(y_coords)
         celltypes = np.array(celltypes)
 
-        n_celltypes = np.unique(celltypes)
+        n_celltypes = max(celltypes) + 1
 
         n_neighbors = [10, 20, 30, 50, 75, 100, 150, 200]
 
@@ -123,7 +124,7 @@ def _tissue_region_partition(n_clusters=3, f=None):
         for j in range(len(x_coords)):
             composition = []
             for n in n_neighbors:
-                temp = np.zeros(n_celltypes.shape)
+                temp = np.zeros(n_celltypes)
                 # get index of the neighbor
                 idx = indices[j, :n]
                 # get the cell type of the neighbor
@@ -147,3 +148,4 @@ def _tissue_region_partition(n_clusters=3, f=None):
             tissue_labels[i][id_] = cluster_labels[j]
 
     return tissue_labels
+
