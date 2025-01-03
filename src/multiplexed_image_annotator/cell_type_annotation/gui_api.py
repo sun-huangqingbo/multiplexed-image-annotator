@@ -33,7 +33,7 @@ def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id,
     for i in range(len(annotator.preprocessor.intensity_full[0])):
         intensity_dict[i + 1] = annotator.preprocessor.intensity_full[0][i]
     intensity_dict[0] = np.zeros_like(annotator.preprocessor.intensity_full[0][0])
-    return intensity_dict
+    return intensity_dict, annotator._get_cell_type_names()
     
 
 def gui_batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence):
@@ -74,9 +74,9 @@ def gui_api(working_addr):
     bs = hyperparameters.get('batch_size')
     cell_size = hyperparameters.get('cell_size')
 
-    img = gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence)
+    img, cell_type_names = gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence)
 
-    return img
+    return img, cell_type_names
 
 def batch_process(working_dir):
     with open(f"{working_dir}/hyperparams_batch.json") as f:

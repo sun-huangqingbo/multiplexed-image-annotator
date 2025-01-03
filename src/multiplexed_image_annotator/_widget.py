@@ -119,6 +119,8 @@ class BatchProcess(QWidget):
         blur={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         upper_limit={'widget_type': 'FloatSlider', 'min': 95, 'max': 100},
         cell_size={'min': 1, 'max': 100},
+        min_cells={'min': 10, 'max': 10000},
+        n_regions={'min': 1, 'max': 50},
         confidence={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         main_dir={'widget_type': 'FileEdit', 'mode': 'd'},
         job_status={'widget_type': 'Label', 'value': 'You do not have running jobs.'}
@@ -134,6 +136,8 @@ class BatchProcess(QWidget):
         main_dir=pathlib.Path('PLEASE SELECT YOUR MAIN DIR (REQUIRED)'),
         strict=False,
         infer=True,
+        min_cells=50,
+        n_regions=5,
         normalize=True,
         upper_limit=100,
         blur=0.5,
@@ -151,6 +155,8 @@ class BatchProcess(QWidget):
             'main_dir': str(main_dir),
             'strict': strict,
             'infer': infer,
+            'min_cells': min_cells,
+            'n_regions': n_regions,
             'normalize': normalize,
             'blur': blur,
             'upper_limit': upper_limit,
@@ -232,6 +238,8 @@ class BatchProcess(QWidget):
                     self.params_panel.main_dir.value = pathlib.Path(new_dict['main_dir'])
                     self.params_panel.strict.value = new_dict['strict']
                     self.params_panel.infer.value = new_dict['infer']
+                    self.params_panel.min_cells.value = new_dict['min_cells']
+                    self.params_panel.n_regions.value = new_dict['n_regions']
                     self.params_panel.normalize.value = new_dict['normalize']
                     self.params_panel.blur.value = new_dict['blur']
                     self.params_panel.upper_limit.value = new_dict['upper_limit']
@@ -350,10 +358,13 @@ class GUIIntegrater(QWidget):
     def load_img(self):
         working_dir = pathlib.Path(self.working_dir_addr)
         output_addr = f"{working_dir}/output_img.png"
+        output_addr_2 = f"{working_dir}/output_img_2.png"
 
         try: 
             output_img = imageio.imread(output_addr)
-            self.viewer.add_labels(output_img, name="output_img")
+            output_img_2 = imageio.imread(output_addr_2)
+            self.viewer.add_labels(output_img, name="cell_type")
+            self.viewer.add_labels(output_img_2, name="tissue_region")
         except:
             print("output_img reading error")
             show_info("Notice! Your output_img reading error! The process may have problem.")
@@ -363,8 +374,8 @@ class GUIIntegrater(QWidget):
         self.update_call_btn(True)
 
         # TODO: if the algorithm returns a string, update your string with the function below
-        new_cell_types_txt = "We obtained some cell types from the algorithm."
-        self.update_cell_types_txt(new_cell_types_txt)
+        # new_cell_types_txt = "We obtained some cell types from the algorithm."
+        # self.update_cell_types_txt(new_cell_types_txt)
 
         show_info("Your job is done! The output image is loaded.")
 
@@ -381,7 +392,8 @@ class GUIIntegrater(QWidget):
         with open(f"{addr_working}/hyperparams.json", 'w') as f:
             json.dump(self.hyper_params, f)
         self.update_status_txt("Your job is running, please wait for the result.")
-        self.intensity_dict = gui_api.gui_api(addr_working)
+        self.intensity_dict, cell_type_text = gui_api.gui_api(addr_working)
+        self.update_cell_types_txt(cell_type_text)
         self.intensity_display = "Cell-level expression intensity has been detected.\nIt will be displayed here.\nPLEASE SELECT MASK LAYER TO USE THIS FUNCTION."
         self.intensity_txt.setText(
             self.intensity_display
@@ -396,6 +408,9 @@ class GUIIntegrater(QWidget):
         batch_size={'min': 1, 'max': 10000, 'step': 16},
         blur={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         upper_limit={'widget_type': 'FloatSlider', 'min': 95, 'max': 100},
+        cell_size={'min': 1, 'max': 100},
+        min_cells={'min': 10, 'max': 10000},
+        n_regions={'min': 1, 'max': 50},
         confidence={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         main_dir={'widget_type': 'FileEdit', 'mode': 'd'},
         job_status={'widget_type': 'Label', 'value': 'You do not have running jobs.'}
@@ -411,6 +426,8 @@ class GUIIntegrater(QWidget):
         main_dir=pathlib.Path('PLEASE SELECT YOUR MAIN DIR (REQUIRED)'),
         strict=False,
         infer=True,
+        min_cells=50,
+        n_regions=5,
         normalize=True,
         blur=0.5,
         upper_limit=100,
@@ -430,6 +447,8 @@ class GUIIntegrater(QWidget):
             'main_dir': str(main_dir),
             'strict': strict,
             'infer': infer,
+            'min_cells': min_cells,
+            'n_regions': n_regions,
             'normalize': normalize,
             'blur': blur,
             'upper_limit': upper_limit,
@@ -507,6 +526,8 @@ class GUIIntegrater(QWidget):
                     self.params_panel.main_dir.value = pathlib.Path(new_dict['main_dir'])
                     self.params_panel.strict.value = new_dict['strict']
                     self.params_panel.infer.value = new_dict['infer']
+                    self.params_panel.min_cells.value = new_dict['min_cells']
+                    self.params_panel.n_regions.value = new_dict['n_regions']
                     self.params_panel.normalize.value = new_dict['normalize']
                     self.params_panel.blur.value = new_dict['blur']
                     self.params_panel.upper_limit.value = new_dict['upper_limit']
