@@ -311,10 +311,7 @@ class GUIIntegrater(QWidget):
         self.label_txt = QLabel("No markers found.")
 
         self.cell_types_txt = QLabel(
-            ''.join(("1: B cell, 2: CD4 T cell, 3: CD8 T cell, 4: Dendritic cell, 5: Regulatory T cell\n",
-            "6: Granulocyte cell, 7: Mast cell, 8: M1 macrophage cell, 9: M2 macrophage cell\n",
-            "10: Natural killer cell, 11: Plasma cell, 12: Endothelial cell, 13: Epithelial cell\n",
-            "14: Stroma cell, 15: Smooth muscle, 16: Proliferating/tumor cell, 17: Nerve cell, 18: Others"))
+            'Cell type names will be displayed here.'
         )
         self.intensity_txt = QLabel(
             "The intensity will be displayed here."

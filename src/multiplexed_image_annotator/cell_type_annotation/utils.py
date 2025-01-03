@@ -24,6 +24,48 @@ def number_to_rgb(value, cmap_name='viridis'):
 
     return rgb_255
 
+def rgb_to_hex(rgb):
+    return '#{:02x}{:02x}{:02x}'.format(rgb[0], rgb[1], rgb[2])
+
+def get_colors(n):
+    colors = []
+    for i in range(n-1):
+        r = np.random.randint(0, 255)
+        g = np.random.randint(0, 255)
+        b = np.random.randint(0, 255)
+        colors.append([r, g, b])
+    colors.append([192, 192, 192])
+    return colors
+
+def color_legend(main_dir, colors):
+      # Calculate the number of rows and columns
+    num_colors = len(colors)
+    num_cols = 6  # Set the number of columns
+    num_rows = (num_colors + num_cols - 1) // num_cols  # Calculate the number of rows needed
+
+    
+    # Create a plot for the color legend in multiple rows
+    fig, ax = plt.subplots(figsize=(2.5 * num_cols, 0.4 * num_rows))
+    # Create the color legend in a grid layout
+    for i, name in enumerate(colors):
+        row = i // num_cols
+        col = i % num_cols
+        ax.add_patch(plt.Rectangle((col, num_rows - row - 1), 1, 1, color=colors[name]))
+        if i == 3 or i == 11:
+            text_color ='black'
+        else:
+            text_color ='white'
+        ax.text(col + 0.5, num_rows - row - 1 + 0.5, name, va='center', ha='center', fontsize=10, color=text_color)
+
+    # Remove the axes
+    ax.set_xlim(0, num_cols)
+    ax.set_ylim(0, num_rows)
+    ax.axis('off')
+
+    plt.savefig(os.path.join(main_dir, 'color_legend.png'), bbox_inches='tight')
+    plt.close()
+
+
 def get_void_vote():
     return {"CD4 T cell": 0, "CD8 T cell": 0, "Dendritic cell": 0, "B cell": 0, "M1 macrophage cell": 0, 
                 "M2 macrophage cell": 0, "Regulatory T cell": 0, "Granulocyte cell": 0, "Plasma cell": 0, "Natural killer cell": 0, "Mast cell": 0,
@@ -88,17 +130,6 @@ def crop_cell(dict,img,mask,save_path,file_name,cell_index=None, channel_index=N
         if not os.path.exists(marker_path):
           os.makedirs(marker_path)
 
-        # marker_ori_path = save_path +'marker_ori_patch/'+file_name
-        # if not os.path.exists(marker_ori_path):
-        #    os.makedirs(marker_ori_path)
-
-        # mask_path = save_path+'mask_patch/'+file_name
-        # if not os.path.exists(mask_path):
-        #   os.makedirs(mask_path)
-
-        # mask_ori_path = save_path+'mask_ori_patch/'+file_name
-        # if not os.path.exists(mask_ori_path):
-        #   os.makedirs(mask_ori_path)
 
         if save_tensor:
             f = os.path.join(marker_path, r"{}.pt".format(c))
@@ -113,16 +144,6 @@ def crop_cell(dict,img,mask,save_path,file_name,cell_index=None, channel_index=N
             f = os.path.join(marker_path, r"{}.tiff".format(c))
             imwrite(f, marker_a)
 
-        # f_2 = os.path.join(marker_ori_path,r"{}.tiff".format(c))
-        # imwrite(f_2,img_patch)
-
-        # f_3 = os.path.join(mask_path,r"{}.tiff".format(c))
-        # imwrite(f_3,mask_smooth)
-
-        # f_4 = os.path.join(mask_ori_path,r"{}.tiff".format(c))
-        # imwrite(f_4,mask_patch)
-      
-        
 
         csvfile.write(f)
         csvfile.write("\n")
