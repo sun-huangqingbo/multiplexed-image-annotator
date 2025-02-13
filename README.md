@@ -87,6 +87,8 @@ Our pipeline requires the following hyper-parameters:
 - **Confidence**: The threshold for determining the validity of a cell type prediction. If the confidence is lower than this value, the model will classify the cell as "Others." The default value is `0.3`. Higher values will result in more "Others" annotations rather than valid cell types.
 - **Cell Size**: The estimated cell size in pixels for the query image.
 - **Cell Type-Specific Confidence**: Allows for setting confidence thresholds for individual cell types rather than using a unified value. This parameter should be edited directly in the `hyperparameter.json` file and selected in the user interface.
+- **min cells** Minimal number of cells in a group for that group to be considered a new cell type. Set it to `-1` to disable the new cell type clustering.
+- **n regions** Number of tissue compartment regions to be identified.
 
 
 All hyperparameters can be pre-determined and saved in the `hyperparameter.json` file. Select this file when using the plugin without re-entering it.
