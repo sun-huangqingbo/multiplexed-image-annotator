@@ -739,7 +739,7 @@ class Annotator(object):
         f = os.path.join(self.temp_dir, f"{self.batch_id}_annotation.pkl")
         self.tissue_regions = _tissue_region_partition(n, f)
 
-    def colorize(self):
+    def colorize(self, from_script=False):
         colors = self.colors
         if len(self.preprocessor.masks) == 0:
             raise ValueError("No masks to colorize")
@@ -770,8 +770,9 @@ class Annotator(object):
             f = os.path.join(self.result_dir, f"{self.batch_id}_colorized_annotation_{i}.png")
             Image.fromarray(colormap).save(f)
 
-            f = "./src/multiplexed_image_annotator/cell_type_annotation/_working_dir_temp/output_img.png"
-            Image.fromarray(colormap3).save(f)
+            if not from_script:
+                f = "./src/multiplexed_image_annotator/cell_type_annotation/_working_dir_temp/output_img.png"
+                Image.fromarray(colormap3).save(f)
 
             f = os.path.join(self.result_dir, f"{self.batch_id}_confidence_{i}.png")
             Image.fromarray(colormap2).save(f)
@@ -779,8 +780,9 @@ class Annotator(object):
             f = os.path.join(self.result_dir, f"{self.batch_id}_tissue_region_{i}.png")
             Image.fromarray(tissuemap).save(f)
 
-            f = "./src/multiplexed_image_annotator/cell_type_annotation/_working_dir_temp/output_img_2.png"
-            Image.fromarray(tissuemap2).save(f)
+            if not from_script:
+                f = "./src/multiplexed_image_annotator/cell_type_annotation/_working_dir_temp/output_img_2.png"
+                Image.fromarray(tissuemap2).save(f)
 
 
     def cell_type_composition(self, reduction=True, integrate=False):
