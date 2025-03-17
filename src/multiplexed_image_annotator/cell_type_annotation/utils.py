@@ -9,6 +9,9 @@ from skimage.io import imread
 import torch
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import colorsys
+import random
+
 
 def number_to_rgb(value, cmap_name='viridis'):
     if value < 0 or value > 1:
@@ -29,13 +32,23 @@ def rgb_to_hex(rgb):
 
 def get_colors(n):
     colors = []
-    for i in range(n-1):
-        r = np.random.randint(0, 255)
-        g = np.random.randint(0, 255)
-        b = np.random.randint(0, 255)
-        colors.append([r, g, b])
+    
+    # Generate colors in HSV space, ensuring they are bright and distinct
+    for i in range(n - 1):
+        hue = i / n  # Spread hues evenly
+        saturation = random.uniform(0.6, 1.0)  # Avoid washed-out colors
+        value = random.uniform(0.7, 1.0)  # Avoid dark colors
+        
+        # Convert HSV to RGB
+        rgb = colorsys.hsv_to_rgb(hue, saturation, value)
+        
+        # Convert to 8-bit RGB format
+        colors.append([int(c * 255) for c in rgb])
+
     colors.append([192, 192, 192])
+    
     return colors
+
 
 def color_legend(main_dir, colors):
       # Calculate the number of rows and columns
