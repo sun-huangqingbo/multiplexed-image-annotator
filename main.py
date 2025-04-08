@@ -6,14 +6,14 @@ from multiplexed_image_annotator.cell_type_annotation.model import Annotator
 import argparse
 
 
-def run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence):
+def run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence, n_jobs):
 
     # write image and mask paths to a csv file
     temp = [[image_path, mask_path]]
     pd.DataFrame(temp).to_csv(os.path.join(main_dir, "images.csv"), index=False, header=["image_path", "mask_path"])
     
     path_ = os.path.join(main_dir, "images.csv")
-    annotator = Annotator(marker_list_path, path_, device, main_dir, batch_id, strict, infer, min_cells, normalize, blur, amax, confidence, cell_size, cell_type_confidence)
+    annotator = Annotator(marker_list_path, path_, device, main_dir, batch_id, strict, infer, min_cells, normalize, blur, amax, confidence, cell_size, cell_type_confidence, n_jobs=n_jobs)
     if not annotator.channel_parser.immune_base and not annotator.channel_parser.immune_extended and not annotator.channel_parser.immune_full and not annotator.channel_parser.struct and not annotator.channel_parser.nerve:
         raise ValueError("No panels are applied. Please check the marker list.")
     annotator.preprocess()
@@ -34,8 +34,8 @@ def run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs,
     return intensity_dict, names
     
 
-def batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence):
-    annotator = Annotator(marker_list_path, image_path, device, main_dir, batch_id, strict, infer, min_cells, normalize, blur, amax, confidence, cell_size, cell_type_confidence)
+def batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, strict, infer, min_cells, n_regions, normalize, blur, amax, confidence, cell_size, cell_type_confidence, n_jobs=0):
+    annotator = Annotator(marker_list_path, image_path, device, main_dir, batch_id, strict, infer, min_cells, normalize, blur, amax, confidence, cell_size, cell_type_confidence, n_jobs=n_jobs)
     if not annotator.channel_parser.immune_base and not annotator.channel_parser.immune_extended and not annotator.channel_parser.immune_full and not annotator.channel_parser.struct and not annotator.channel_parser.nerve:
         raise ValueError("No panels are applied. Please check the marker list.")
     annotator.preprocess()
@@ -85,6 +85,8 @@ def parse_args():
                       help='Batch size')
     parser.add_argument('--cell-size', type=int, default=30,
                       help='Cell size')
+    parser.add_argument('--n_jobs', type=int, default=0,
+                      help='Cell size')
     
     # Mode selection (single or batch)
     group = parser.add_mutually_exclusive_group(required=True)
@@ -125,7 +127,8 @@ if __name__ == "__main__":
             amax=args.amax,
             confidence=args.confidence,
             cell_size=args.cell_size,
-            cell_type_confidence=args.cell_type_confidence
+            cell_type_confidence=args.cell_type_confidence,
+            n_jobs=args.n_jobs
         )
     else:
         run(
@@ -145,5 +148,6 @@ if __name__ == "__main__":
             amax=args.amax,
             confidence=args.confidence,
             cell_size=args.cell_size,
-            cell_type_confidence=args.cell_type_confidence
+            cell_type_confidence=args.cell_type_confidence,
+            n_jobs=args.n_jobs
         )
