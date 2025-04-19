@@ -48,6 +48,14 @@ import numpy as np
 
 import napari
 
+import xml.etree.ElementTree as ET
+
+import tifffile
+
+import subprocess
+
+import re
+
 class BatchProcess(QWidget):
     def __init__(self):
         super().__init__()
@@ -298,7 +306,8 @@ class GUIIntegrater(QWidget):
         self.viewer = napari.current_viewer()
         self.params_panel.json_file.changed.connect(self.parse_json)
 
-        self.params_panel.image_file.changed.connect(self.add_image)
+        # self.params_panel.image_file.changed.connect(self.add_image)
+        self.params_panel.image_file.changed.connect(self.add_image_enhanced)
         self.params_panel.marker_file.changed.connect(self.add_marker)
         self.params_panel.mask_file.changed.connect(self.add_mask)
 
@@ -565,6 +574,94 @@ class GUIIntegrater(QWidget):
             print("image reading error")
             show_info("Notice! Input image reading error!")
 
+    def add_image_enhanced(self):
+        img_path = self.params_panel.image_file.value
+        if not os.path.exists(img_path):
+            return
+
+        try:
+            img_name = "multiplexed_image"
+            img = imread(img_path)
+            if self.files_idices[0] != -1:
+                self.viewer.layers[img_name].data = img
+            else:
+                user_img = self.viewer.add_image(
+                    img,
+                    name=img_name
+                )
+                self.files_idices[0] = 1
+            
+        except:
+            print("image reading error")
+            show_info("Notice! Input image reading error!")
+            return
+
+        if str(img_path).endswith('.tiff') or str(img_path).endswith('.tif'):
+            try:
+                with tifffile.TiffFile(img_path) as tif:
+                    # print("OME metadata:", tif.ome_metadata)
+                    ome_xml_str = tif.ome_metadata
+                # Parse the XML
+                root = ET.fromstring(ome_xml_str)
+
+                # Define the OME namespace (required for parsing)
+                ns = {'ome': 'http://www.openmicroscopy.org/Schemas/OME/2016-06'}
+
+                # Find all <Channel> tags and get the Name attribute
+                channel_markers = [
+                    channel.attrib['Name']
+                    for channel in root.findall(".//ome:Channel", ns)
+                    if 'Name' in channel.attrib
+                ]
+
+                # print("Marker names:", channel_markers)
+                self.generate_marker_txt(channel_markers)
+            except:
+                show_info("Notice! Your image file does not have valid OME metadata! Please include the markers manually.")
+
+        elif str(img_path).endswith('.qptiff'):
+            bftools_addr = os.path.join(
+                os.getcwd(),
+                "src/bftools/"
+            )
+            ome_meta_addr = os.path.join(
+                os.getcwd(),
+                "src/ome_metadata.txt"
+            )
+            result = subprocess.run(f"{bftools_addr}showinf -nopix -omexml {img_path} > {ome_meta_addr}", shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                with open(f"{ome_meta_addr}", "r") as f:
+                    lines = f.readlines()
+
+                # Extract biomarker names using regex
+                biomarkers = list()
+                for line in lines:
+                    match = re.search(r"Biomarker\s+#\d+:\s+(.*)", line)
+                    if match:
+                        biomarkers.append(match.group(1).strip())
+
+                self.generate_marker_txt(biomarkers)
+
+            else:
+                show_info("Notice! Your image file does not have valid OME metadata! Please include the markers manually.")
+
+        else:
+            show_info("Notice! We only support automatic extraction from .tiff, .tif, and .qptiff files. Please include the markers manually.")
+
+    def generate_marker_txt(self, input_markers):
+        new_lbl_txt = "The markers from the latest uploaded image:\n"
+        new_lbl_txt += f"{os.path.basename(self.params_panel.image_file.value)}\n"
+        for idx, marker in enumerate(input_markers):
+            new_lbl_txt += f"{idx}. {marker}, "
+            # for the last element, do not have ,
+            if idx == len(self.markers) - 1:
+                new_lbl_txt = new_lbl_txt[:-2]
+            if idx > 0 and idx % 5 == 0:
+                new_lbl_txt += "\n"
+
+        self.label_txt.setText(new_lbl_txt)
+
+
     # NOTE: the marker file should be a .txt file
     def add_marker(self):
         marker_path = self.params_panel.marker_file.value
@@ -580,7 +677,7 @@ class GUIIntegrater(QWidget):
                     if line:
                         self.markers.append(line)
 
-            new_lbl_txt = ""
+            new_lbl_txt = "The markers you manually applied:\n"
             for idx, marker in enumerate(self.markers):
                 new_lbl_txt += f"{idx}. {marker}, "
                 # for the last element, do not have ,
