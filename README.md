@@ -53,7 +53,7 @@ pip install .
 ### Required input files and hyper-parameters
 Our tool requires a 3D (CHW) multiplexed tissue TIFF image stack, its cell segmentation mask (in 2D) where 0 means background and 1 ~ N means cell regions, and a text file containing an antibody panel where each line lists a marker name. Please find examples in `example_files` folder.
 
-For standard OME-TIFF file, the image channel names (marker names) can ba automatically extracted and parsed from its metadata, so no text file is needed. QPTIFF file is also supported for automated metadata extraction, however, the computer needs to have JAVA installed.
+For a standard OME-TIFF file, the image channel names (marker names) can be automatically extracted and parsed from its metadata, so no text file is needed. A QPTIFF file is also supported for automated metadata extraction; however, the computer needs to have JAVA installed.
 
 Note that the antibody/marker names need to EXACTLY match the names provided below in order to let the program to automatically match them with our panels.
 
