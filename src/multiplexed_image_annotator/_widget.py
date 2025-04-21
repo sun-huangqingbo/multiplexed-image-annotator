@@ -616,7 +616,9 @@ class GUIIntegrater(QWidget):
 
                 # print("Marker names:", channel_markers)
                 self.generate_marker_txt(channel_markers)
-            except:
+            # catch any errors
+            except Exception as e:
+                show_info("Error parsing OME metadata:", e)
                 show_info("Notice! Your image file does not have valid OME metadata! Please include the markers manually.")
 
         elif str(img_path).endswith('.qptiff'):
@@ -654,7 +656,7 @@ class GUIIntegrater(QWidget):
         for idx, marker in enumerate(input_markers):
             new_lbl_txt += f"{idx}. {marker}, "
             # for the last element, do not have ,
-            if idx == len(self.markers) - 1:
+            if idx == len(input_markers) - 1:
                 new_lbl_txt = new_lbl_txt[:-2]
             if idx > 0 and idx % 5 == 0:
                 new_lbl_txt += "\n"
