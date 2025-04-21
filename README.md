@@ -53,6 +53,8 @@ pip install .
 ### Required input files and hyper-parameters
 Our tool requires a 3D (CHW) multiplexed tissue TIFF image stack, its cell segmentation mask (in 2D) where 0 means background and 1 ~ N means cell regions, and a text file containing an antibody panel where each line lists a marker name. Please find examples in `example_files` folder.
 
+For standard OME-TIFF file, the image channel names (marker names) can ba automatically extracted and parsed from its metadata, so no text file is needed. QPTIFF file is also supported for automated metadata extraction, however, the computer needs to have JAVA installed.
+
 Note that the antibody/marker names need to EXACTLY match the names provided below in order to let the program to automatically match them with our panels.
 
 - Basic Panel:
@@ -89,6 +91,8 @@ Our pipeline requires the following hyper-parameters:
 - **Cell Type-Specific Confidence**: Allows for setting confidence thresholds for individual cell types rather than using a unified value. This parameter should be edited directly in the `hyperparameter.json` file and selected in the user interface.
 - **min cells** Minimal number of cells in a group for that group to be considered a new cell type. Set it to `-1` to disable the new cell type clustering.
 - **n regions** Number of tissue compartment regions to be identified.
+- **n_jobs** Number of processes to use for image preprocessing.
+
 
 
 All hyperparameters can be pre-determined and saved in the `hyperparameter.json` file. Select this file when using the plugin without re-entering it.
