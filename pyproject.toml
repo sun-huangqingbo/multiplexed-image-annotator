@@ -41,6 +41,7 @@ dependencies = [
     "torch",
     "umap-learn",
     "gdown",
+    "imagecodecs",
 ]
 
 [project.optional-dependencies]

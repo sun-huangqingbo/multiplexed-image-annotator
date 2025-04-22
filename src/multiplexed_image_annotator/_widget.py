@@ -591,8 +591,8 @@ class GUIIntegrater(QWidget):
                 )
                 self.files_idices[0] = 1
             
-        except:
-            print("image reading error")
+        except Exception as e:
+            print(f"image reading error as: \n{e}")
             show_info("Notice! Input image reading error!")
             return
 
@@ -618,7 +618,7 @@ class GUIIntegrater(QWidget):
                 self.generate_marker_txt(channel_markers)
             # catch any errors
             except Exception as e:
-                show_info("Error parsing OME metadata:", e)
+                show_info(f"Error parsing OME metadata: {e}")
                 show_info("Notice! Your image file does not have valid OME metadata! Please include the markers manually.")
 
         elif str(img_path).endswith('.qptiff'):
