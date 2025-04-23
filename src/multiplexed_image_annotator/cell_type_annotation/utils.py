@@ -50,7 +50,7 @@ def get_colors(n):
     return colors
 
 
-def color_legend(main_dir, colors):
+def color_legend(main_dir, colors, cell=True):
       # Calculate the number of rows and columns
     num_colors = len(colors)
     num_cols = 6  # Set the number of columns
@@ -64,10 +64,10 @@ def color_legend(main_dir, colors):
         row = i // num_cols
         col = i % num_cols
         ax.add_patch(plt.Rectangle((col, num_rows - row - 1), 1, 1, color=colors[name]))
-        if i == 3 or i == 11:
-            text_color ='black'
-        else:
-            text_color ='white'
+        hex = colors[name]
+        rgb = [int(hex[i:i + 2], 16) for i in (1, 3, 5)]
+        luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255
+        text_color = 'black' if luminance > 0.5 else 'white'
         ax.text(col + 0.5, num_rows - row - 1 + 0.5, name, va='center', ha='center', fontsize=10, color=text_color)
 
     # Remove the axes
@@ -75,7 +75,10 @@ def color_legend(main_dir, colors):
     ax.set_ylim(0, num_rows)
     ax.axis('off')
 
-    plt.savefig(os.path.join(main_dir, 'color_legend.png'), bbox_inches='tight')
+    if cell:
+        plt.savefig(os.path.join(main_dir, 'cell_color_legend.png'), bbox_inches='tight')
+    else:
+        plt.savefig(os.path.join(main_dir, 'tissue_region_color_legend.png'), bbox_inches='tight')
     plt.close()
 
 

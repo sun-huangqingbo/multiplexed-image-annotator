@@ -782,6 +782,8 @@ class Annotator(object):
             tissuemap = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
             tissuemap2 = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.uint8)
             tissue_colors = get_colors(self.n_regions)
+            
+            
             for j in range(1, mask.max() + 1):
                 celltype_pred = np.where(self.cell_types == self.annotations[i][j - 1])[0][0]
                 row, col = self.preprocessor.cell_pos_dict[i][j]
@@ -791,6 +793,9 @@ class Annotator(object):
 
                 tissuemap[row, col, :] = tissue_colors[self.tissue_regions[i][j]]
                 tissuemap2[row, col] = self.tissue_regions[i][j] + 1
+            tissue_colors = {f"Region {i}": rgb_to_hex(tissue_colors[i]) for i in range(len(tissue_colors))}
+            color_legend(self.result_dir, tissue_colors, cell=False)
+
             
             # save the colorized mask
             f = os.path.join(self.result_dir, f"{self.batch_id}_colorized_annotation_{i}.png")
