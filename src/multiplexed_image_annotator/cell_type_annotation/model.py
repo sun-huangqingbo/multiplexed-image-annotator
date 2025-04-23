@@ -432,6 +432,25 @@ class Annotator(object):
         # save legend
         colors = {f"{self.cell_types[i]}": rgb_to_hex(self.colors[i]) for i in range(len(self.cell_types))}
         color_legend(self.result_dir, colors)
+
+        all_annotations = []
+
+        for i in range(len(self.annotations)):
+            temp = []
+            f = os.path.join(self.result_dir, f"{self.batch_id}_annotation_{i}.txt")
+            with open(f, "w") as file:
+                for j, key in enumerate(self.preprocessor.cell_pos_dict[i].keys()):
+                    file.write(f"Cell {key}: {self.annotations[i][j]}\n")
+                    cell_type_int = np.where(self.cell_types == self.annotations[i][j])[0][0]
+                    conf = self.confidence[i][j]
+                    # get coordinates
+                    row, col = self.preprocessor.cell_pos_dict[i][j + 1]
+
+                    dict_ = {"Cell ID": key, "Cell type": cell_type_int, "Confidence": conf, "Row": row, "Column": col}
+                    temp.append(dict_)
+                all_annotations.append(temp)
+
+        self.annotations_all = all_annotations
                 
 
     def merge_by_voting(self):
@@ -461,10 +480,10 @@ class Annotator(object):
                     thresh = min(o1, o2, o3, self.confidence_thresh) if self.cell_type_confidence[max_vote] < 0 else self.cell_type_confidence[max_vote]
                     if vote[max_vote] < thresh:
                         self.annotations[i].append("Others")
-                        self.confidence[i].append([192, 192, 192])
+                        self.confidence[i].append(-1)
                     else:
                         self.annotations[i].append(max_vote)
-                        self.confidence[i].append(number_to_rgb(vote[max_vote]))
+                        self.confidence[i].append(vote[max_vote])
 
         elif len(self.immune_annotations) > 0 and len(self.struct_annotations) > 0:
             for i in range(len(self.immune_annotations)):
@@ -488,10 +507,10 @@ class Annotator(object):
                     thresh = min(o1, o2, self.confidence_thresh) if self.cell_type_confidence[max_vote] < 0 else self.cell_type_confidence[max_vote]
                     if vote[max_vote] < thresh:
                         self.annotations[i].append("Others")
-                        self.confidence[i].append([192, 192, 192])
+                        self.confidence[i].append(-1)
                     else:
                         self.annotations[i].append(max_vote)
-                        self.confidence[i].append(number_to_rgb(vote[max_vote]))
+                        self.confidence[i].append(vote[max_vote])
         
         elif len(self.struct_annotations) > 0 and len(self.nerve_annotations) > 0:
             for i in range(len(self.struct_annotations)):
@@ -515,10 +534,10 @@ class Annotator(object):
                     thresh = min(o1, o2, self.confidence_thresh) if self.cell_type_confidence[max_vote] < 0 else self.cell_type_confidence[max_vote]
                     if vote[max_vote] < thresh:
                         self.annotations[i].append("Others")
-                        self.confidence[i].append([192, 192, 192])
+                        self.confidence[i].append(-1)
                     else:
                         self.annotations[i].append(max_vote)
-                        self.confidence[i].append(number_to_rgb(vote[max_vote]))
+                        self.confidence[i].append(vote[max_vote])
 
         elif len(self.immune_annotations) > 0 and len(self.nerve_annotations) > 0:
             for i in range(len(self.immune_annotations)):
@@ -542,10 +561,10 @@ class Annotator(object):
                     thresh = min(o1, o2, self.confidence_thresh) if self.cell_type_confidence[max_vote] < 0 else self.cell_type_confidence[max_vote]
                     if vote[max_vote] < thresh:
                         self.annotations[i].append("Others")
-                        self.confidence[i].append([192, 192, 192])
+                        self.confidence[i].append(-1)
                     else:
                         self.annotations[i].append(max_vote)
-                        self.confidence[i].append(number_to_rgb(vote[max_vote]))
+                        self.confidence[i].append(vote[max_vote])
 
         elif len(self.immune_annotations) > 0:
             for i in range(len(self.immune_annotations)):
@@ -556,10 +575,10 @@ class Annotator(object):
                     thresh = self.cell_type_confidence[max_vote] if self.cell_type_confidence[max_vote] > 0 else self.confidence_thresh
                     if max_vote != "Others" and self.immune_annotations[i][j][max_vote] < thresh:
                         self.annotations[i].append("Others")
-                        self.confidence[i].append([192, 192, 192])
+                        self.confidence[i].append(-1)
                     else:
                         self.annotations[i].append(max_vote)
-                        self.confidence[i].append(number_to_rgb(self.immune_annotations[i][j][max_vote]))
+                        self.confidence[i].append(self.immune_annotations[i][j][max_vote])
                     
         elif len(self.struct_annotations) > 0:
             for i in range(len(self.struct_annotations)):
@@ -570,10 +589,10 @@ class Annotator(object):
                     thresh = self.cell_type_confidence[max_vote] if self.cell_type_confidence[max_vote] > 0 else self.confidence_thresh
                     if max_vote != "Others" and self.struct_annotations[i][j][max_vote] < thresh:
                         self.annotations[i].append("Others")
-                        self.confidence[i].append([192, 192, 192])
+                        self.confidence[i].append(-1)
                     else:
                         self.annotations[i].append(max_vote)
-                        self.confidence[i].append(number_to_rgb(self.struct_annotations[i][j][max_vote]))
+                        self.confidence[i].append(self.struct_annotations[i][j][max_vote])
 
         elif len(self.nerve_annotations) > 0:
             for i in range(len(self.nerve_annotations)):
@@ -584,10 +603,10 @@ class Annotator(object):
                     thresh = self.cell_type_confidence[max_vote] if self.cell_type_confidence[max_vote] > 0 else self.confidence_thresh
                     if max_vote != "Others" and self.nerve_annotations[i][j][max_vote] < thresh:
                         self.annotations[i].append("Others")
-                        self.confidence[i].append([192, 192, 192])
+                        self.confidence[i].append(-1)
                     else:
                         self.annotations[i].append(max_vote)
-                        self.confidence[i].append(number_to_rgb(self.nerve_annotations[i][j][max_vote]))
+                        self.confidence[i].append(self.nerve_annotations[i][j][max_vote])
         
         else:
             raise ValueError("No predictions to merge")
@@ -616,10 +635,10 @@ class Annotator(object):
             for i in range(len(clustering_model.labels_)):
                 if clustering_model.labels_[i] != -1:
                     self.annotations[indices[i][0]][indices[i][1]] = f"Additional type {clustering_model.labels_[i]}"
-                    self.confidence[indices[i][0]][indices[i][1]] = [192, 192, 192]
+                    self.confidence[indices[i][0]][indices[i][1]] = -1
                 else:
                     self.annotations[indices[i][0]][indices[i][1]] = "Others"
-                    self.confidence[indices[i][0]][indices[i][1]] = [192, 192, 192]
+                    self.confidence[indices[i][0]][indices[i][1]] = -1
             
 
     def _get_unique_cell_types(self):
@@ -717,28 +736,32 @@ class Annotator(object):
         all_annotations = []
 
         for i in range(len(self.annotations)):
-            temp = []
-            f = os.path.join(self.result_dir, f"{self.batch_id}_annotation_{i}.txt")
+            f = os.path.join(self.result_dir, f"{self.batch_id}_annotation_{i}.csv")
+            # write into a csv file
             with open(f, "w") as file:
+                file.write("Cell Index, Cell type, Confidence, Row, Column, Tissue Region\n")
                 for j, key in enumerate(self.preprocessor.cell_pos_dict[i].keys()):
-                    file.write(f"Cell {key}: {self.annotations[i][j]}\n")
+                    # file.write(f"Cell {key}: {self.annotations[i][j]}\n")
                     cell_type_int = np.where(self.cell_types == self.annotations[i][j])[0][0]
                     conf = self.confidence[i][j]
                     # get coordinates
-                    row, col = self.preprocessor.cell_pos_dict[i][j + 1]
+                    row, col = self.preprocessor.cell_pos_dict[i][key]
 
-                    dict_ = {"Cell ID": key, "Cell type": cell_type_int, "Confidence": conf, "Row": row, "Column": col}
-                    temp.append(dict_)
-                all_annotations.append(temp)
+                    tissue_region_label = "Region " + str(self.tissue_regions[i][key]) if hasattr(self, 'tissue_regions') else None
 
-        f = os.path.join(self.temp_dir, f"{self.batch_id}_annotation.pkl")
-        with open(f, "wb") as file:
-            pickle.dump(all_annotations, file)
+                    file.write(f"{key}, {self.annotations[i][j]}, {conf}, {row}, {col}, {tissue_region_label}\n")
+            # close
+            file.close()
+
+            # log
+            self.logger.log(f"Exported annotations for image {i} to {f}")
+
+
+
                 
     def tissue_region_analysis(self, n):
         self.n_regions = n
-        f = os.path.join(self.temp_dir, f"{self.batch_id}_annotation.pkl")
-        self.tissue_regions = _tissue_region_partition(n, f)
+        self.tissue_regions = _tissue_region_partition(self.annotations_all, n)
 
     def colorize(self, from_script=False):
         colors = self.colors
@@ -761,7 +784,7 @@ class Annotator(object):
                 celltype_pred = np.where(self.cell_types == self.annotations[i][j - 1])[0][0]
                 row, col = self.preprocessor.cell_pos_dict[i][j]
                 colormap[row, col, :] = colors[celltype_pred]
-                colormap2[row, col, :] = self.confidence[i][j - 1]
+                colormap2[row, col, :] = number_to_rgb(self.confidence[i][j - 1]) if self.confidence[i][j - 1] > 0 else [192, 192, 192]
                 colormap3[row, col] = celltype_pred + 1
 
                 tissuemap[row, col, :] = tissue_colors[self.tissue_regions[i][j]]
