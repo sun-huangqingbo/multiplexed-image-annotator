@@ -34,6 +34,7 @@ The output of this tool is a cell-type map, its annotation confidence, and spati
 - torch
 - umap-learn
 - gdown
+- imagecodecs
 
 NVIDIA graphics hardware with CUDA and cuDNN support is recommended. 
 
