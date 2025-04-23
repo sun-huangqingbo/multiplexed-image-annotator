@@ -33,17 +33,17 @@ def rgb_to_hex(rgb):
 def get_colors(n):
     colors = []
     
-    # Generate colors in HSV space, ensuring they are bright and distinct
+    # Randomly generate colors in HSV space, ensuring they are bright and distinct
     for i in range(n - 1):
-        hue = i / (n - 1)  # Spread hues evenly
-        saturation = 0.9  # High saturation for distinct colors
-        value = 0.9  # High brightness to avoid dark colors
-        
-        # Convert HSV to RGB
-        rgb = colorsys.hsv_to_rgb(hue, saturation, value)
+        hue = i / n  # Spread colors evenly in the hue space
+        saturation = 0.8 + random.uniform(0, 0.2)  # Random saturation between 0.8 and 1.0
+        value = 0.8 + random.uniform(0, 0.2)  # Random value between 0.8 and 1.0
+        rgb = colorsys.hsv_to_rgb(hue, saturation, value)  # Convert HSV to RGB
         
         # Convert to 8-bit RGB format
         colors.append([int(c * 255) for c in rgb])
+    # shuffle the colors
+    random.shuffle(colors)
 
     colors.append([192, 192, 192])
     
