@@ -736,7 +736,7 @@ class Annotator(object):
             f = os.path.join(self.result_dir, f"{self.batch_id}_annotation_{i}.csv")
             # write into a csv file
             with open(f, "w") as file:
-                file.write("Cell Index, Cell type, Confidence, Row, Column, Tissue Region\n")
+                file.write("Cell Index,Cell Type,Confidence,Row,Column,Tissue Region\n")
                 for j, key in enumerate(self.preprocessor.cell_pos_dict[i].keys()):
                     # file.write(f"Cell {key}: {self.annotations[i][j]}\n")
                     cell_type_int = np.where(self.cell_types == self.annotations[i][j])[0][0]
@@ -749,7 +749,7 @@ class Annotator(object):
 
                     tissue_region_label = "Region " + str(self.tissue_regions[i][key]) if hasattr(self, 'tissue_regions') else None
 
-                    file.write(f"{key}, {self.annotations[i][j]}, {conf}, {row}, {col}, {tissue_region_label}\n")
+                    file.write(f"{key},{self.annotations[i][j]},{conf},{row},{col},{tissue_region_label}\n")
             # close
             file.close()
 
