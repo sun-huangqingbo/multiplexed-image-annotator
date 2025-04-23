@@ -88,10 +88,7 @@ def _neighborhood_analysis(self, n_neighbors=10, cell_types=None, integrate=Fals
                 pickle.dump(neighborhood, file)
 
 
-def _tissue_region_partition(n_clusters=3, f=None):
-    # Load the data
-    annotation_all = pickle.load(open(f, "rb"))
-
+def _tissue_region_partition(annotation_all, n_clusters=3):
 
     tissue_labels = []
     for i in range(len(annotation_all)):
