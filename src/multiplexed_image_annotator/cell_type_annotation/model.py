@@ -17,7 +17,7 @@ from .markerParse import MarkerParser
 from .preprocess import ImageProcessor
 from .logger import Logger
 from .utils import *
-from .spatial_methods import _tissue_region_partition
+from .spatial_methods import tissue_region_partition, neighborhood_analysis
 
 from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import KMeans, HDBSCAN
@@ -437,18 +437,15 @@ class Annotator(object):
 
         for i in range(len(self.annotations)):
             temp = []
-            f = os.path.join(self.result_dir, f"{self.batch_id}_annotation_{i}.txt")
-            with open(f, "w") as file:
-                for j, key in enumerate(self.preprocessor.cell_pos_dict[i].keys()):
-                    file.write(f"Cell {key}: {self.annotations[i][j]}\n")
-                    cell_type_int = np.where(self.cell_types == self.annotations[i][j])[0][0]
-                    conf = self.confidence[i][j]
-                    # get coordinates
-                    row, col = self.preprocessor.cell_pos_dict[i][j + 1]
+            for j, key in enumerate(self.preprocessor.cell_pos_dict[i].keys()):
+                cell_type_int = np.where(self.cell_types == self.annotations[i][j])[0][0]
+                conf = self.confidence[i][j]
+                # get coordinates
+                row, col = self.preprocessor.cell_pos_dict[i][j + 1]
 
-                    dict_ = {"Cell ID": key, "Cell type": cell_type_int, "Confidence": conf, "Row": row, "Column": col}
-                    temp.append(dict_)
-                all_annotations.append(temp)
+                dict_ = {"Cell ID": key, "Cell type": cell_type_int, "Confidence": conf, "Row": row, "Column": col}
+                temp.append(dict_)
+            all_annotations.append(temp)
 
         self.annotations_all = all_annotations
                 
@@ -760,11 +757,13 @@ class Annotator(object):
             self.logger.log(f"Exported annotations for image {i} to {f}")
 
 
-
+    def neighborhood_analysis(self, n_neighbors=25, integrate=True, normalize=True):
+        neighborhood_analysis(self.annotations_all, n_neighbors=n_neighbors, cell_types=self.cell_types, integrate=integrate, 
+                              normalize=normalize, result_dir=self.result_dir, batch_id=self.batch_id)
                 
     def tissue_region_analysis(self, n):
         self.n_regions = n
-        self.tissue_regions = _tissue_region_partition(self.annotations_all, n)
+        self.tissue_regions = tissue_region_partition(self.annotations_all, n)
 
     def colorize(self, from_script=False):
         colors = self.colors

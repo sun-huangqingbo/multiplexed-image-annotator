@@ -64,7 +64,8 @@ def neighborhood_analysis(annotation_all, n_neighbors=10, cell_types=None, integ
             for i in range(len(cell_types)):
                 file.write(f"{cell_types[i]},")
                 for j in range(len(cell_types)):
-                    file.write(f"{neighborhood[i][j]},")
+                    file.write(f"{neighborhood[i][j]:.3f},") # keep 3 decimal points
+    
                 file.write("\n")
 
                     
@@ -93,7 +94,7 @@ def neighborhood_analysis(annotation_all, n_neighbors=10, cell_types=None, integ
             for j in range(len(coordinates)):
                 indices = nbrs.kneighbors([coordinates[j]], return_distance=False)[0]
                 for k in indices[1:]:
-                    neighborhood[cell_types[celltypes[j], celltypes[k]] += 1
+                    neighborhood[celltypes[j], celltypes[k]] += 1
 
             # normalize
             if normalize:
@@ -123,7 +124,7 @@ def neighborhood_analysis(annotation_all, n_neighbors=10, cell_types=None, integ
                 for i in range(len(cell_types)):
                     file.write(f"{cell_types[i]},")
                     for j in range(len(cell_types)):
-                        file.write(f"{neighborhood[i][j]},")
+                        file.write(f"{neighborhood[i][j]:.3f},")
                     file.write("\n")
 
 
