@@ -744,8 +744,11 @@ class Annotator(object):
                     # file.write(f"Cell {key}: {self.annotations[i][j]}\n")
                     cell_type_int = np.where(self.cell_types == self.annotations[i][j])[0][0]
                     conf = self.confidence[i][j]
+                    conf = round(conf, 3)
                     # get coordinates
                     row, col = self.preprocessor.cell_pos_dict[i][key]
+                    row = round(np.mean(row), 2)
+                    col = round(np.mean(col), 2)
 
                     tissue_region_label = "Region " + str(self.tissue_regions[i][key]) if hasattr(self, 'tissue_regions') else None
 
@@ -866,4 +869,6 @@ class Annotator(object):
     def clear_tmp(self):
         for f in os.listdir(self.temp_dir):
             os.remove(os.path.join(self.temp_dir, f))
+        os.rmdir(self.temp_dir)
+        self.logger.log("Temporary files cleared")
 
