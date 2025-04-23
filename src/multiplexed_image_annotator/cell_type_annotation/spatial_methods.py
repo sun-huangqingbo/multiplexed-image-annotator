@@ -9,25 +9,34 @@ import numpy as np
 import pickle
 
 
-def _neighborhood_analysis(self, n_neighbors=10, cell_types=None, integrate=False, normalize=True, batch_id=None, result_dir=None):
-    colors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00", "#00FFFF", "#FF00FF", "#FFA500",
-            "#800080", "#FFC0CB", "#008080", "#32CD32", "#4B0082", "#808000", "#800000",
-            "#000080", "#FFD700", "#EE82EE", "#C0C0C0"]
-    colors = {k: colors[i] for i, k in enumerate(cell_types)}
-    
+def neighborhood_analysis(annotation_all, n_neighbors=10, cell_types=None, integrate=False, normalize=True, batch_id=None, result_dir=None):
     if integrate:
         neighborhood = np.zeros((len(cell_types), len(cell_types)))
-        for i, key in enumerate(self.preprocessor.cell_pos_dict.keys()):
-            coordinates = self.preprocessor.cell_pos_dict[key]
+        for i in range(len(annotation_all)):
+            x_coords = []
+            y_coords = []
+            celltypes = []
+            cell_id = []
+            for j in range(len(annotation_all[i])):
+                x_coords.append(np.mean(annotation_all[i][j]["Column"]))
+                y_coords.append(np.mean(annotation_all[i][j]["Row"]))
+                celltypes.append(annotation_all[i][j]["Cell type"])
+                cell_id.append(annotation_all[i][j]["Cell ID"])
+
             # to array
-            coordinates = [[np.mean(coordinates[k][0]), np.mean(coordinates[k][1])] for k in sorted(coordinates.keys())]
-            assert len(coordinates) == len(self.annotations[i])
+            x_coords = np.array(x_coords)
+            y_coords = np.array(y_coords)
+            celltypes = np.array(celltypes).astype(int)
+    
+            coordinates = np.array([np.array(x_coords), np.array(y_coords)]).T
+            assert len(coordinates) == len(annotation_all[i])
             # fit the nearest neighbors
             nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='ball_tree').fit(coordinates)
-            for j in range(len(self.annotations[i])):
+            for j in range(len(coordinates)):
                 indices = nbrs.kneighbors([coordinates[j]], return_distance=False)[0]
                 for k in indices[1:]:
-                    neighborhood[cell_types.index(self.annotations[i][j]), cell_types.index(self.annotations[i][k])] += 1
+                    print()
+                    neighborhood[celltypes[j], celltypes[k]] += 1
         # normalize
         if normalize:
             for i in range(len(neighborhood)):
@@ -45,25 +54,47 @@ def _neighborhood_analysis(self, n_neighbors=10, cell_types=None, integrate=Fals
         plt.savefig(f)
         plt.close()
 
-        # pickle the neighborhood
-        f = os.path.join(result_dir, f"{batch_id}_integrated_neighborhood.pkl")
-        with open(f, "wb") as file:
-            pickle.dump(neighborhood, file)
+        # write into a csv file
+        f = os.path.join(result_dir, f"{batch_id}_integrated_neighborhood.csv")
+        with open(f, "w") as file:
+            file.write("cell_type,")
+            for i in range(len(cell_types)):
+                file.write(f"{cell_types[i]},")
+            file.write("\n")
+            for i in range(len(cell_types)):
+                file.write(f"{cell_types[i]},")
+                for j in range(len(cell_types)):
+                    file.write(f"{neighborhood[i][j]},")
+                file.write("\n")
 
                     
     else:
-        for i, key in enumerate(self.preprocessor.cell_pos_dict.keys()):
+        for i in range(len(annotation_all)):
             neighborhood = np.zeros((len(cell_types), len(cell_types)))
-            coordinates = self.preprocessor.cell_pos_dict[key]
+            x_coords = []
+            y_coords = []
+            celltypes = []
+            cell_id = []
+            for j in range(len(annotation_all[i])):
+                x_coords.append(np.mean(annotation_all[i][j]["Column"]))
+                y_coords.append(np.mean(annotation_all[i][j]["Row"]))
+                celltypes.append(annotation_all[i][j]["Cell type"])
+                cell_id.append(annotation_all[i][j]["Cell ID"])
+
             # to array
-            coordinates = [[np.mean(coordinates[k][0]), np.mean(coordinates[k][1])] for k in sorted(coordinates.keys())]
-            assert len(coordinates) == len(self.annotations[i])
+            x_coords = np.array(x_coords)
+            y_coords = np.array(y_coords)
+            celltypes = np.array(celltypes).astype(int)
+
+            coordinates = np.array([np.array(x_coords), np.array(y_coords)]).T
+            assert len(coordinates) == len(annotation_all[i])
             # fit the nearest neighbors
             nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='ball_tree').fit(coordinates)
-            for j in range(len(self.annotations[i])):
+            for j in range(len(coordinates)):
                 indices = nbrs.kneighbors([coordinates[j]], return_distance=False)[0]
                 for k in indices[1:]:
-                    neighborhood[cell_types.index(self.annotations[i][j]), cell_types.index(self.annotations[i][k])] += 1
+                    neighborhood[cell_types[celltypes[j], celltypes[k]] += 1
+
             # normalize
             if normalize:
                 for ii in range(len(neighborhood)):
@@ -82,13 +113,21 @@ def _neighborhood_analysis(self, n_neighbors=10, cell_types=None, integrate=Fals
             plt.close()
 
 
-            # pickle the neighborhood
-            f = os.path.join(result_dir, f"{batch_id}_neighborhood_{i}.pkl")
-            with open(f, "wb") as file:
-                pickle.dump(neighborhood, file)
+            # write into a csv file
+            f = os.path.join(result_dir, f"{batch_id}_neighborhood_{i}.csv")
+            with open(f, "w") as file:
+                file.write("cell_type,")
+                for i in range(len(cell_types)):
+                    file.write(f"{cell_types[i]},")
+                file.write("\n")
+                for i in range(len(cell_types)):
+                    file.write(f"{cell_types[i]},")
+                    for j in range(len(cell_types)):
+                        file.write(f"{neighborhood[i][j]},")
+                    file.write("\n")
 
 
-def _tissue_region_partition(annotation_all, n_clusters=3):
+def tissue_region_partition(annotation_all, n_clusters=3):
 
     tissue_labels = []
     for i in range(len(annotation_all)):
