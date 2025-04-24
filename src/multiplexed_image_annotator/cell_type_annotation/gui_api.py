@@ -30,6 +30,9 @@ def gui_run(marker_list_path, image_path, mask_path, device, main_dir, batch_id,
     annotator.cell_type_composition()
     annotator.clear_tmp()
 
+    # delete csv file
+    os.remove(path_)
+
     intensity_dict = {}
     for i in range(len(annotator.preprocessor.intensity_full[0])):
         intensity_dict[i + 1] = annotator.preprocessor.intensity_full[0][i]
