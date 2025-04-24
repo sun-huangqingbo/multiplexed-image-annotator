@@ -36,8 +36,8 @@ def get_colors(n):
     # Randomly generate colors in HSV space, ensuring they are distinct
     for i in range(n - 1):
         hue = i / n  # Spread the hues evenly
-        saturation = 0.4 + random.uniform(0, 0.6)
-        value = 0.4 + random.uniform(0, 0.6) 
+        saturation = 0.6 + random.uniform(0, 0.4)
+        value = 0.6 + random.uniform(0, 0.4) 
         rgb = colorsys.hsv_to_rgb(hue, saturation, value)  # Convert HSV to RGB
         
         # Convert to 8-bit RGB format
