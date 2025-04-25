@@ -20,22 +20,6 @@ The output of this tool is a cell-type map, its annotation confidence, and spati
 ```
 
 ## Requirements
-- magicgui
-- matplotlib
-- napari
-- numpy
-- pyqt5
-- scipy
-- seaborn
-- scikit-learn
-- skimage
-- tifffile
-- timm
-- torch
-- umap-learn
-- gdown
-- imagecodecs
-
 NVIDIA graphics hardware with CUDA and cuDNN support is recommended. 
 
 ## Getting started
