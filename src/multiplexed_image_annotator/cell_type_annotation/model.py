@@ -691,6 +691,7 @@ class Annotator(object):
                     colormap[j] = np.mean(temp, axis=0)
                 # save the heatmap
                 f = os.path.join(self.result_dir, f"{self.batch_id}_heatmap_{i}.png")
+                plt.figure(figsize=(colormap.shape[1] // 4, colormap.shape[0] // 4))
                 sns.heatmap(colormap, cmap='vlag', xticklabels=self.channel_parser.markers, yticklabels=celltypes, linewidth=.5)
                 plt.tight_layout()
                 plt.savefig(f)
@@ -769,6 +770,7 @@ class Annotator(object):
 
         for i in range(len(self.preprocessor.masks)):
             mask = self.preprocessor.masks[i]
+
             colormap = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
             colormap2 = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
             colormap3 = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.uint8)
@@ -790,7 +792,7 @@ class Annotator(object):
                     tissuemap2[row, col] = self.tissue_regions[i][j] + 1
             if self.n_regions > 0:
                 tissue_colors = {f"Region {i}": rgb_to_hex(tissue_colors[i]) for i in range(len(tissue_colors))}
-            color_legend(self.result_dir, tissue_colors, cell=False)
+                color_legend(self.result_dir, tissue_colors, cell=False)
 
             
             # save the colorized mask

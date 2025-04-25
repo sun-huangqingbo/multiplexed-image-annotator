@@ -240,6 +240,7 @@ def process_cell_batch(cell_batch, img_zero_local, mask_local, min_val_local,
         patch, avg_int = crop_cell(img_zero_local, mask_local, min_val_local, 
                                 cell_id, shared_cell_pos_dict, patch_size_local)
         
+        avg_int_copy = avg_int.copy()
         # rescale
         patch = resize(patch, (patch.shape[0], 40, 40), anti_aliasing=True, order=0, preserve_range=True)
         
@@ -252,11 +253,9 @@ def process_cell_batch(cell_batch, img_zero_local, mask_local, min_val_local,
             # concat
             blank_patch = -np.ones_like(patch[0:1])
             patch = np.concatenate((patch[:index], blank_patch, patch[index:]), axis=0)
-            avg_int = avg_int[channel_index_]
-            avg_int = np.insert(avg_int, index, -1)
         else:
             patch = patch[channel_index_local, :, :]
-            avg_int = avg_int[channel_index_local]
+
             
         results.append((cell_idx, patch, avg_int))
     return results

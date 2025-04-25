@@ -90,11 +90,8 @@ class ImageProcessor(object):
                     # concat
                     blank_patch = -np.ones_like(patch[0:1])
                     patch = np.concatenate((patch[:index], blank_patch, patch[index:]), axis=0)
-                    avg_int = avg_int[channel_index_]
-                    avg_int = np.insert(avg_int, index, -1)
                 else:
                     patch = patch[channel_index, :, :]
-                    avg_int = avg_int[channel_index]
                     
                 temp[j] = patch
         else:
