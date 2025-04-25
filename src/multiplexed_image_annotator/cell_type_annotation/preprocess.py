@@ -17,7 +17,10 @@ import torch
 
 from .markerParse import MarkerParser
 from .markerImputer import MarkerImputer
+from .utils import crop_cell, process_chunk, process_cell_batch
 
+
+    
 
 class ImageProcessor(object):
     def __init__(self, csv_path, parser, main_path, device, batch_id='', infer=True, normalization=True, blur=0, amax=100, cell_size=30, logger=None, n_jobs=0) -> None:
@@ -72,7 +75,7 @@ class ImageProcessor(object):
             intensity_full = [] if int_full else None
             
             for j, c in enumerate(cell_index):
-                patch, avg_int = self._crop_cell(img_zero, mask, min_val, c, cell_pos_dict, patch_size)
+                patch, avg_int = crop_cell(img_zero, mask, min_val, c, cell_pos_dict, patch_size)
                 # rescale
                 patch = resize(patch, (patch.shape[0], 40, 40), anti_aliasing=True, order=0, preserve_range=True)
                 if int_full:
@@ -95,66 +98,49 @@ class ImageProcessor(object):
                     
                 temp[j] = patch
         else:
-            # Multiprocessing implementation
-            import multiprocessing as mp
-            from functools import partial
-            
-            # Create a local version of the worker function with proper encapsulation
-            def process_cell(args, img_zero_local, mask_local, min_val_local, cell_pos_dict_local, 
-                            patch_size_local, channel_index_local):
-                cell_idx, cell_id = args
-                
-                # Use self._crop_cell through a picklable wrapper
-                patch, avg_int = self._crop_cell(img_zero_local, mask_local, min_val_local, 
-                                            cell_id, cell_pos_dict_local, patch_size_local)
-                
-                # rescale
-                patch = resize(patch, (patch.shape[0], 40, 40), anti_aliasing=True, order=0, preserve_range=True)
-                
-                if -1 in channel_index_local:
-                    # get index
-                    index = list(channel_index_local).index(-1)
-                    # temporary remove -1 from channel_index
-                    channel_index_ = np.delete(channel_index_local, index)
-                    patch = patch[channel_index_, :, :]
-                    # concat
-                    blank_patch = -np.ones_like(patch[0:1])
-                    patch = np.concatenate((patch[:index], blank_patch, patch[index:]), axis=0)
-                    avg_int = avg_int[channel_index_]
-                    avg_int = np.insert(avg_int, index, -1)
-                else:
-                    patch = patch[channel_index_local, :, :]
-                    avg_int = avg_int[channel_index_local]
-                    
-                return cell_idx, patch, avg_int
-            
+            # Create a manager to share data between processes
+            self.logger.log("Using multiprocessing with {} processes.".format(n_jobs))
+            manager = mp.Manager()
+            shared_dict = manager.dict({
+                'cell_pos_dict': cell_pos_dict
+            })
+
+
+            # Create indices and cell IDs for all cells
+            cell_args = [(j, c) for j, c in enumerate(cell_index)]
+
+            # Determine number of processes
+            num_processes = min(n_jobs, mp.cpu_count())
+
+            # Calculate optimal chunk size to reduce overhead (fewer, larger tasks)
+            chunk_size = max(1, len(cell_args) // (num_processes * 4))
+
+            # Split tasks into batches
+            cell_batches = [cell_args[i:i+chunk_size] for i in range(0, len(cell_args), chunk_size)]
+
             # Create partial function with all the needed data
-            process_func = partial(
-                process_cell,
+            process_batch_func = partial(
+                process_cell_batch,
                 img_zero_local=img_zero,
                 mask_local=mask,
                 min_val_local=min_val,
-                cell_pos_dict_local=cell_pos_dict,
+                shared_cell_pos_dict=shared_dict['cell_pos_dict'],
                 patch_size_local=patch_size,
                 channel_index_local=channel_index
             )
-            
-            # Create indices and cell IDs for all cells
-            cell_args = [(j, c) for j, c in enumerate(cell_index)]
-            
-            # Determine number of processes
-            num_processes = min(n_jobs, mp.cpu_count())
-            
-            # Process cells in parallel
+
+            # Process cells in parallel with batching
             with mp.Pool(processes=num_processes) as pool:
-                results = pool.map(process_func, cell_args)
-            
+                batch_results = pool.map(process_batch_func, cell_batches)
+
             # Collect results
             intensity_full = [] if int_full else None
-            for j, patch, avg_int in results:
-                temp[j] = patch
-                if int_full:
-                    intensity_full.append(avg_int)
+
+            for results_batch in batch_results:
+                for j, patch, avg_int in results_batch:
+                    temp[j] = patch
+                    if int_full:
+                        intensity_full.append(avg_int)
         
         # Convert to tensor and post-process
         tensor_patch = torch.tensor(temp, dtype=torch.float32)
@@ -176,43 +162,12 @@ class ImageProcessor(object):
         return None
 
 
-
-
     def _move_image_range(self,image):
         # move image intensity range to (0,N)
         min_val = np.min(image,axis=(1, 2), keepdims=True)
         img_zero = image - min_val
         return min_val, img_zero
     
-    def _crop_cell(self, image, mask, min_val, c_id, pos_dict, patch_size):
-        x_mean = (min(pos_dict[c_id][0]) + max(pos_dict[c_id][0])) // 2
-        xmin = x_mean - patch_size / 2
-        xmin = int(max(xmin, 0))
-        xmax = int(min(xmin + patch_size, image.shape[1]))
-
-        y_mean = (min(pos_dict[c_id][1]) + max(pos_dict[c_id][1])) // 2
-        ymin = y_mean - patch_size / 2
-        ymin = int(max(ymin, 0))
-        ymax = int(min(ymin + patch_size, image.shape[2]))
-
-        img_patch = np.zeros((image.shape[0], patch_size, patch_size))
-        mask_patch = np.zeros((patch_size, patch_size))
-        img_zero_patch = np.zeros((image.shape[0], patch_size, patch_size))
-        img_patch[:, :(xmax-xmin), :(ymax-ymin)] = image[:, xmin:xmax, ymin:ymax]
-        img_zero_patch[:, :(xmax-xmin), :(ymax-ymin)] = image[:, xmin:xmax, ymin:ymax]
-        mask_patch[:(xmax-xmin), :(ymax-ymin)] = mask[xmin:xmax, ymin:ymax]
-
-        mask_smooth = self._smooth(mask_patch, c_id)
-        
-        marker_a = img_zero_patch * mask_smooth
-        marker_a = marker_a + min_val
-
-        avg_int = np.zeros(image.shape[0])
-        # get avg intensity of the cell for each channel
-        for i in range(image.shape[0]):
-            avg_int[i] = np.mean(marker_a[i, :, :][mask_patch > 0])
-        return marker_a, avg_int
-
     def _cell_pos_dict(self, mask, n_jobs=0):
         # A function to create a dictionary of cell_id:position_index
         # mask is a 2D image, where each cell has a unique id (1,2,....,N)
@@ -238,26 +193,6 @@ class ImageProcessor(object):
         
         # Multi-process implementation
         else:
-            def process_chunk(chunk_data):
-                # Process a chunk of the mask
-                start_row, end_row, mask_chunk = chunk_data
-                local_dict = {}
-                
-                for i in range(mask_chunk.shape[0]):
-                    for j in range(mask_chunk.shape[1]):
-                        c = mask_chunk[i, j]
-                        if c == 0:  # 0 is background
-                            continue
-                            
-                        if c not in local_dict:
-                            local_dict[c] = ([], [])
-                        
-                        # Adjust i to global coordinates
-                        local_dict[c][0].append(i + start_row)
-                        local_dict[c][1].append(j)
-                
-                return local_dict
-            
             # Determine the number of processes to use
             num_processes = min(n_jobs, mp.cpu_count())
             
@@ -285,23 +220,6 @@ class ImageProcessor(object):
             
             return cell_pos_dict
 
-    def _smooth(self, mask,c):
-        mask = mask == c
-        smooth = mask.astype("f")
-        count = 1
-        for j in range (1, 5, 1):
-            mask_dilated = dilation(mask, disk(j))
-
-            smooth += mask_dilated.astype("f")
-            count += 1
-            for i in np.arange(0, j-1, 1):
-                smooth += filters.gaussian(mask_dilated, sigma=1+i)
-                count += 1
-        smooth /=  count
-        smooth /= np.max(smooth+1e-6)
-
-        return smooth
-    
 
     def _normalize(self, img, blur=0, amax=100):
         img = img.astype(np.float32)

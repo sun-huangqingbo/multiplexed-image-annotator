@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import colorsys
 import random
-
+from skimage.transform import resize
 
 def number_to_rgb(value, cmap_name='viridis'):
     if value < 0 or value > 1:
@@ -55,7 +55,6 @@ def color_legend(main_dir, colors, cell=True):
     num_colors = len(colors)
     num_cols = 6  # Set the number of columns
     num_rows = (num_colors + num_cols - 1) // num_cols  # Calculate the number of rows needed
-
     
     # Create a plot for the color legend in multiple rows
     fig, ax = plt.subplots(figsize=(2.5 * num_cols, 0.4 * num_rows))
@@ -65,6 +64,7 @@ def color_legend(main_dir, colors, cell=True):
         col = i % num_cols
         ax.add_patch(plt.Rectangle((col, num_rows - row - 1), 1, 1, color=colors[name]))
         hex = colors[name]
+
         rgb = [int(hex[i:i + 2], 16) for i in (1, 3, 5)]
         luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255
         text_color = 'black' if luminance > 0.5 else 'white'
@@ -165,7 +165,36 @@ def crop_cell(dict,img,mask,save_path,file_name,cell_index=None, channel_index=N
         csvfile.write("\n")
 
 
-def smooth(mask,c):
+def crop_cell(image, mask, min_val, c_id, pos_dict, patch_size):
+    x_mean = (min(pos_dict[c_id][0]) + max(pos_dict[c_id][0])) // 2
+    xmin = x_mean - patch_size / 2
+    xmin = int(max(xmin, 0))
+    xmax = int(min(xmin + patch_size, image.shape[1]))
+
+    y_mean = (min(pos_dict[c_id][1]) + max(pos_dict[c_id][1])) // 2
+    ymin = y_mean - patch_size / 2
+    ymin = int(max(ymin, 0))
+    ymax = int(min(ymin + patch_size, image.shape[2]))
+
+    img_patch = np.zeros((image.shape[0], patch_size, patch_size))
+    mask_patch = np.zeros((patch_size, patch_size))
+    img_zero_patch = np.zeros((image.shape[0], patch_size, patch_size))
+    img_patch[:, :(xmax-xmin), :(ymax-ymin)] = image[:, xmin:xmax, ymin:ymax]
+    img_zero_patch[:, :(xmax-xmin), :(ymax-ymin)] = image[:, xmin:xmax, ymin:ymax]
+    mask_patch[:(xmax-xmin), :(ymax-ymin)] = mask[xmin:xmax, ymin:ymax]
+
+    mask_smooth = smooth(mask_patch, c_id)
+    
+    marker_a = img_zero_patch * mask_smooth
+    marker_a = marker_a + min_val
+
+    avg_int = np.zeros(image.shape[0])
+    # get avg intensity of the cell for each channel
+    for i in range(image.shape[0]):
+        avg_int[i] = np.mean(marker_a[i, :, :][mask_patch > 0])
+    return marker_a, avg_int
+
+def smooth(mask, c):
     mask = mask == c
     smooth = mask.astype("f")
     count = 1
@@ -182,4 +211,52 @@ def smooth(mask,c):
 
     return smooth
 
+def process_chunk(chunk_data):
+    # Process a chunk of the mask
+    start_row, end_row, mask_chunk = chunk_data
+    local_dict = {}
+    
+    for i in range(mask_chunk.shape[0]):
+        for j in range(mask_chunk.shape[1]):
+            c = mask_chunk[i, j]
+            if c == 0:  # 0 is background
+                continue
+                
+            if c not in local_dict:
+                local_dict[c] = ([], [])
+            
+            # Adjust i to global coordinates
+            local_dict[c][0].append(i + start_row)
+            local_dict[c][1].append(j)
+    
+    return local_dict
 
+
+# Create a local version of the worker function that processes batches
+def process_cell_batch(cell_batch, img_zero_local, mask_local, min_val_local, 
+                    shared_cell_pos_dict, patch_size_local, channel_index_local):
+    results = []
+    for cell_idx, cell_id in cell_batch:
+        patch, avg_int = crop_cell(img_zero_local, mask_local, min_val_local, 
+                                cell_id, shared_cell_pos_dict, patch_size_local)
+        
+        # rescale
+        patch = resize(patch, (patch.shape[0], 40, 40), anti_aliasing=True, order=0, preserve_range=True)
+        
+        if -1 in channel_index_local:
+            # get index
+            index = list(channel_index_local).index(-1)
+            # temporary remove -1 from channel_index
+            channel_index_ = np.delete(channel_index_local, index)
+            patch = patch[channel_index_, :, :]
+            # concat
+            blank_patch = -np.ones_like(patch[0:1])
+            patch = np.concatenate((patch[:index], blank_patch, patch[index:]), axis=0)
+            avg_int = avg_int[channel_index_]
+            avg_int = np.insert(avg_int, index, -1)
+        else:
+            patch = patch[channel_index_local, :, :]
+            avg_int = avg_int[channel_index_local]
+            
+        results.append((cell_idx, patch, avg_int))
+    return results

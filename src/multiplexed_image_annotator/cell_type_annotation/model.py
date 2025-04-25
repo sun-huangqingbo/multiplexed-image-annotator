@@ -124,7 +124,7 @@ class Annotator(object):
 
         self.preprocessor = ImageProcessor(image_path, self.channel_parser, main_dir, device, batch_id, infer, normalize, blur, amax, cell_size, self.logger, n_jobs=n_jobs)
         self._loaded = False
-
+        self.n_jobs = n_jobs
         self._n_images = 0
         self.min_cells = min_cells
 
@@ -150,6 +150,8 @@ class Annotator(object):
         self.confidence_thresh = confidence
 
         self.extra_cell_types = self.min_cells > 0 
+
+        self.n_regions = 0
 
         self.temp_dir = os.path.join(main_dir, "tmp")
         self.result_dir = os.path.join(main_dir, "results")
@@ -265,10 +267,6 @@ class Annotator(object):
 
                 celltype_dict = {0: "CD4 T cell", 1: "CD8 T cell", 2: "Dendritic cell", 3: "B cell", 4: "M1 macrophage cell", 5: "M2 macrophage cell", 
                                  6: "Regulatory T cell", 7: "Granulocyte cell", 8: "Plasma cell", 9: "Natural killer cell", 10: "Mast cell", 11: "Others"}
-                
-                for c in celltype_dict.values():
-                    if c not in self.applied_cell_types and c != "Others":
-                        self.applied_cell_types.append(c)
 
                 pred = []
 
@@ -332,10 +330,6 @@ class Annotator(object):
                 temp = np.concatenate(temp, axis=0)
 
                 celltype_dict = {0: "B cell", 1: "CD4 T cell", 2: "CD8 T cell", 3: "Others", 4: "Dendritic cell"}
-
-                for c in celltype_dict.values():
-                    if c not in self.applied_cell_types and c != "Others":
-                        self.applied_cell_types.append(c)
 
                 pred = []
 
@@ -763,7 +757,7 @@ class Annotator(object):
                 
     def tissue_region_analysis(self, n):
         self.n_regions = n
-        self.tissue_regions = tissue_region_partition(self.annotations_all, n)
+        self.tissue_regions = tissue_region_partition(self.annotations_all, n, self.n_jobs)
 
     def colorize(self, from_script=False):
         colors = self.colors
@@ -781,7 +775,8 @@ class Annotator(object):
 
             tissuemap = np.zeros((mask.shape[0], mask.shape[1], 3), dtype=np.uint8)
             tissuemap2 = np.zeros((mask.shape[0], mask.shape[1]), dtype=np.uint8)
-            tissue_colors = get_colors(self.n_regions)
+            if self.n_regions > 0:
+                tissue_colors = get_colors(self.n_regions + 1)
             
             
             for j in range(1, mask.max() + 1):
@@ -790,10 +785,11 @@ class Annotator(object):
                 colormap[row, col, :] = colors[celltype_pred]
                 colormap2[row, col, :] = number_to_rgb(self.confidence[i][j - 1]) if self.confidence[i][j - 1] > 0 else [192, 192, 192]
                 colormap3[row, col] = celltype_pred + 1
-
-                tissuemap[row, col, :] = tissue_colors[self.tissue_regions[i][j]]
-                tissuemap2[row, col] = self.tissue_regions[i][j] + 1
-            tissue_colors = {f"Region {i}": rgb_to_hex(tissue_colors[i]) for i in range(len(tissue_colors))}
+                if self.n_regions > 0:
+                    tissuemap[row, col, :] = tissue_colors[self.tissue_regions[i][j]]
+                    tissuemap2[row, col] = self.tissue_regions[i][j] + 1
+            if self.n_regions > 0:
+                tissue_colors = {f"Region {i}": rgb_to_hex(tissue_colors[i]) for i in range(len(tissue_colors))}
             color_legend(self.result_dir, tissue_colors, cell=False)
 
             
@@ -808,8 +804,9 @@ class Annotator(object):
             f = os.path.join(self.result_dir, f"{self.batch_id}_confidence_{i}.png")
             Image.fromarray(colormap2).save(f)
 
-            f = os.path.join(self.result_dir, f"{self.batch_id}_tissue_region_{i}.png")
-            Image.fromarray(tissuemap).save(f)
+            if self.n_regions > 0:
+                f = os.path.join(self.result_dir, f"{self.batch_id}_tissue_region_{i}.png")
+                Image.fromarray(tissuemap).save(f)
 
             if not from_script:
                 f = "./src/multiplexed_image_annotator/cell_type_annotation/_working_dir_temp/output_img_2.png"
