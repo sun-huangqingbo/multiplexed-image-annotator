@@ -23,7 +23,21 @@ The output of this tool is a cell-type map, its annotation confidence, and spati
 NVIDIA graphics hardware with CUDA and cuDNN support is recommended. 
 
 ## Getting started
-### Installation
+### Option 1: To access RIBCA progamatically without using GUI (Napari)
+Install the following required packages: numpy, scikit-image, matplotlib, scipy, seaborn, scikit-learn, tifffile, timm, torch, umap-learn, down, and imagecodecs.
+Download all models by running
+```bash
+python download_models.py
+```
+or directly download them from the URLs in the script and put them in the `src/multiplexed_image_annotator/cell_type_annotation/models` folder.
+Run 
+```bash
+python main.py --...
+```
+with required arguments.
+
+
+### Option 2: To use Napari GUI
 Download all models by running
 ```bash
 python download_models.py
@@ -35,7 +49,7 @@ Clone this repo and install it locally by running the following
 pip install .
 ```
 
-### Required input files and hyper-parameters
+## Required input files and hyper-parameters
 Our tool requires a 3D (CHW) multiplexed tissue TIFF image stack, its cell segmentation mask (in 2D) where 0 means background and 1 ~ N means cell regions, and a text file containing an antibody panel where each line lists a marker name. Please find examples in `example_files` folder.
 
 For a standard OME-TIFF file, the image channel names (marker names) can be automatically extracted and parsed from its metadata, so no text file is needed. A QPTIFF file is also supported for automated metadata extraction; however, the computer needs to have JAVA installed.
@@ -83,7 +97,7 @@ Our pipeline requires the following hyper-parameters:
 All hyperparameters can be pre-determined and saved in the `hyperparameter.json` file. Select this file when using the plugin without re-entering it.
 
 
-### User interface
+## User interface
 Our user interface is realized as a Napari Plugin. It has two modules: 1. Single Image Annotator; 2. Batch Processing. 
 
 Single Image Annotator is designed to tune the hyparameters, annotate one image at a time, and visualize the annotation results. After selecting Single Image Annotator, the napari window will look like follows, by clicking four buttons (in red box) to launch the annotator
@@ -100,5 +114,5 @@ The main Napari build-in viewer (yellow box) shows the original tissue image, ce
 
 When running the Batch Processing, RIBCA will be running in the backend and do not involve interactive and visualization features. Results will be saved to the assigned folder.
 
-### Contact
+## Contact
 sunh at stanford dot edu
