@@ -62,6 +62,11 @@ class ImageProcessor(object):
         self.n_jobs = n_jobs
 
 
+        self.logger.log("\n")
+        self.logger.log("Starting image processing...")
+
+
+
     def _img2patches(self, image, mask, channel_index, cell_pos_dict, imputer, id, patch_size=40, save_tensor=True, save_path=None, int_full=False, n_jobs=0):
         min_val, img_zero = self._move_image_range(image)
         patch_size = int(patch_size * self.scale)
@@ -96,7 +101,6 @@ class ImageProcessor(object):
                 temp[j] = patch
         else:
             # Create a manager to share data between processes
-            self.logger.log("Using multiprocessing with {} processes.".format(n_jobs))
             manager = mp.Manager()
             shared_dict = manager.dict({
                 'cell_pos_dict': cell_pos_dict

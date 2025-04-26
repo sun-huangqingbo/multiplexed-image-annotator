@@ -97,10 +97,12 @@ class MarkerParser():
                 print(f"{panel} panel is applied.")
                 if self.logger:
                     self.logger.log(f"{panel} panel is applied.")
+                    self.logger.log(f"\n")
             else:
                 print(f"{panel} panel is not applied.")
                 if self.logger:
                     self.logger.log(f"{panel} panel is not applied.")
+                    self.logger.log(f"\n")
                 self.indices[panel] = None
 
         if self.indices['immune_base']:

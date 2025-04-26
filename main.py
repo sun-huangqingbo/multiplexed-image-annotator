@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from multiplexed_image_annotator.cell_type_annotation.model import Annotator
+from src.multiplexed_image_annotator.cell_type_annotation.model import Annotator
 import argparse
 
 

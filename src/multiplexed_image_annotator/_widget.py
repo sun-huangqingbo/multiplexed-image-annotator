@@ -131,7 +131,6 @@ class BatchProcess(QWidget):
         n_regions={'min': 1, 'max': 50},
         confidence={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         main_dir={'widget_type': 'FileEdit', 'mode': 'd'},
-        n_jobs={'widget_type': 'SpinBox', 'min': 0, 'max': 10, 'step': 1},
         job_status={'widget_type': 'Label', 'value': 'You do not have running jobs.'}
     )
     def params_panel(
@@ -154,7 +153,6 @@ class BatchProcess(QWidget):
         cell_size=30,
         job_status='You do not have running jobs.',
         cell_type_confidence=None,
-        n_jobs=0
     ):
         new_dict = {
             'json_file': str(json_file),
@@ -174,7 +172,7 @@ class BatchProcess(QWidget):
             'batch_id': batch_id,
             'cell_size': cell_size,
             'cell_type_confidence': cell_type_confidence,
-            'n_jobs': n_jobs
+            'n_jobs': 0
         }
         self.hyper_params = new_dict
 
@@ -257,9 +255,6 @@ class BatchProcess(QWidget):
                     self.params_panel.confidence.value = new_dict['confidence']
                     self.params_panel.cell_size.value = new_dict['cell_size']
                     self.params_panel.cell_type_confidence.value = new_dict['cell_type_confidence']
-                    self.params_panel.n_jobs.value = new_dict['n_jobs']
-
-
             except:
                 print("json file parsing error")
                 show_info("Notice! Your json file has a parsing error!")
@@ -423,7 +418,6 @@ class GUIIntegrater(QWidget):
         n_regions={'min': 1, 'max': 50},
         confidence={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         main_dir={'widget_type': 'FileEdit', 'mode': 'd'},
-        n_jobs={'widget_type': 'SpinBox', 'min': 0, 'max': 10, 'step': 1},
         job_status={'widget_type': 'Label', 'value': 'You do not have running jobs.'}
     )
     def params_panel(
@@ -446,8 +440,6 @@ class GUIIntegrater(QWidget):
         cell_size=30,
         job_status='You do not have running jobs.',
         cell_type_confidence=None,
-        n_jobs=0
-
     ):
         new_dict = {
             'json_file': str(json_file),
@@ -467,7 +459,7 @@ class GUIIntegrater(QWidget):
             'confidence': confidence,
             'cell_size': cell_size,
             'cell_type_confidence': cell_type_confidence,
-            'n_jobs': n_jobs
+            'n_jobs': 0
         }
         self.hyper_params = new_dict
         print(pathlib.Path('.'))
@@ -547,7 +539,6 @@ class GUIIntegrater(QWidget):
                     self.params_panel.confidence.value = new_dict['confidence']
                     self.params_panel.cell_size.value = new_dict['cell_size']
                     self.params_panel.cell_type_confidence.value = new_dict['cell_type_confidence']
-                    self.params_panel.n_jobs.value = new_dict['n_jobs']
             except:
                 print("json file parsing error")
                 show_info("Notice! Your json file has a parsing error!")
