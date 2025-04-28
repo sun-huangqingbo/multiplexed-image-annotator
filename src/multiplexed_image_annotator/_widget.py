@@ -56,12 +56,14 @@ import subprocess
 
 import re
 
+import pandas as pd
+
 class BatchProcess(QWidget):
     def __init__(self):
         super().__init__()
         self.viewer = napari.current_viewer()
         self.params_panel.json_file.changed.connect(self.parse_json)
-
+        self.params_panel.csv_file.changed.connect(self.parse_csv)
         self.params_panel.marker_file.changed.connect(self.add_marker)
 
         self.params_panel.job_status.bind(self.update_status_txt)
@@ -135,9 +137,9 @@ class BatchProcess(QWidget):
     )
     def params_panel(
         self,
+        csv_file=pathlib.Path('PLEASE SELECT YOUR .CSV FILE (REQUIRED)'),
         json_file=pathlib.Path('PLEASE SELECT YOUR PARAMS JSON FILE (OPTIONAL)'),
         marker_file=pathlib.Path('PLEASE SELECT YOUR MARKER FILE (REQUIRED)'),
-        csv_file=pathlib.Path('PLEASE SELECT YOUR .CSV FILE (REQUIRED)'),
         batch_id='',
         device='cuda',
         batch_size=128,
@@ -229,6 +231,99 @@ class BatchProcess(QWidget):
     # NOTE: This is the callback function when user input some string
     def user_input_str_callback(self):
         print(self.params_panel.batch_id.value)
+
+    def parse_csv(self):
+        try:
+            df = pd.read_csv(self.params_panel.csv_file.value)
+            first_image_path = df['image_path'].iloc[0]
+            try:
+                img = imread(first_image_path)
+            
+            except Exception as e:
+                print(f"image reading error as: \n{e}")
+                show_info("Notice! Input image from the csv is invalid!")
+                return
+
+            if str(first_image_path).endswith('.tiff') or str(first_image_path).endswith('.tif'):
+                try:
+                    with tifffile.TiffFile(first_image_path) as tif:
+                        # print("OME metadata:", tif.ome_metadata)
+                        ome_xml_str = tif.ome_metadata
+                    # Parse the XML
+                    root = ET.fromstring(ome_xml_str)
+
+                    # Define the OME namespace (required for parsing)
+                    ns = {'ome': 'http://www.openmicroscopy.org/Schemas/OME/2016-06'}
+
+                    # Find all <Channel> tags and get the Name attribute
+                    channel_markers = [
+                        channel.attrib['Name']
+                        for channel in root.findall(".//ome:Channel", ns)
+                        if 'Name' in channel.attrib
+                    ]
+
+                    self.generate_marker_txt(channel_markers)
+                # catch any errors
+                except Exception as e:
+                    show_info(f"Error parsing OME metadata: {e}")
+                    show_info("Notice! Your image file does not have valid OME metadata! Please include the markers manually.")
+
+            elif str(first_image_path).endswith('.qptiff'):
+                bftools_addr = os.path.join(
+                    os.getcwd(),
+                    "src/bftools/"
+                )
+                ome_meta_addr = os.path.join(
+                    os.getcwd(),
+                    "src/ome_metadata.txt"
+                )
+                result = subprocess.run(f"{bftools_addr}showinf -nopix -omexml {first_image_path} > {ome_meta_addr}", shell=True, capture_output=True, text=True)
+                if result.returncode == 0:
+                    with open(f"{ome_meta_addr}", "r") as f:
+                        lines = f.readlines()
+
+                    # Extract biomarker names using regex
+                    biomarkers = list()
+                    for line in lines:
+                        match = re.search(r"Biomarker\s+#\d+:\s+(.*)", line)
+                        if match:
+                            biomarkers.append(match.group(1).strip())
+
+                    self.generate_marker_txt(biomarkers)
+
+                else:
+                    show_info("Notice! Your image file does not have valid OME metadata! Please include the markers manually.")
+
+            else:
+                show_info("Notice! We only support automatic extraction from .tiff, .tif, and .qptiff files. Please include the markers manually.")
+
+    
+        except Exception as e:
+            print(f"CSV parsing error: {e}")
+            show_info("Notice! Your CSV file has a parsing error!")
+            return
+
+
+    def generate_marker_txt(self, input_markers):
+
+        automatic_marker_path = os.path.join(
+            os.getcwd(),
+            "src/AUTOMATIC_markers_batch.txt"
+        )
+
+        txt_to_write = ""
+        for idx, marker in enumerate(input_markers):
+            txt_to_write += f"{marker}\n"
+
+        with open(automatic_marker_path, 'w') as f:
+
+            f.write(txt_to_write)
+
+        if os.path.exists(automatic_marker_path):
+            self.params_panel.marker_file.value = automatic_marker_path
+            self.add_marker()
+        else:
+            show_info("Notice! Automatic marker file creation failed! Please include the markers manually.")
 
     # parse the json file, if want to add more parameters, consider this function
     def parse_json(self):
@@ -642,17 +737,25 @@ class GUIIntegrater(QWidget):
             show_info("Notice! We only support automatic extraction from .tiff, .tif, and .qptiff files. Please include the markers manually.")
 
     def generate_marker_txt(self, input_markers):
-        new_lbl_txt = "The markers from the latest uploaded image:\n"
-        new_lbl_txt += f"{os.path.basename(self.params_panel.image_file.value)}\n"
-        for idx, marker in enumerate(input_markers):
-            new_lbl_txt += f"{idx}. {marker}, "
-            # for the last element, do not have ,
-            if idx == len(input_markers) - 1:
-                new_lbl_txt = new_lbl_txt[:-2]
-            if idx > 0 and idx % 5 == 0:
-                new_lbl_txt += "\n"
 
-        self.label_txt.setText(new_lbl_txt)
+        automatic_marker_path = os.path.join(
+            os.getcwd(),
+            "src/AUTOMATIC_markers_single.txt"
+        )
+
+        txt_to_write = ""
+        for idx, marker in enumerate(input_markers):
+            txt_to_write += f"{marker}\n"
+
+        with open(automatic_marker_path, 'w') as f:
+
+            f.write(txt_to_write)
+
+        if os.path.exists(automatic_marker_path):
+            self.params_panel.marker_file.value = automatic_marker_path
+            self.add_marker()
+        else:
+            show_info("Notice! Automatic marker file creation failed! Please include the markers manually.")
 
 
     # NOTE: the marker file should be a .txt file
@@ -670,7 +773,7 @@ class GUIIntegrater(QWidget):
                     if line:
                         self.markers.append(line)
 
-            new_lbl_txt = "The markers you manually applied:\n"
+            new_lbl_txt = ""
             for idx, marker in enumerate(self.markers):
                 new_lbl_txt += f"{idx}. {marker}, "
                 # for the last element, do not have ,
