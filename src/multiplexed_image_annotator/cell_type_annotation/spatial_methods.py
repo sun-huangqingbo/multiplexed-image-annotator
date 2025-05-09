@@ -180,7 +180,7 @@ def tissue_region_partition(annotation_all, n_clusters=3, n_jobs=0):
         compositions = np.array(compositions)
         # HDB clustering
 
-        n_jobs = n_jobs if n_jobs > 0 else None
+        n_jobs = n_jobs if n_jobs is not None and n_jobs > 0 else None
         # PCA
         pca = PCA(n_components=0.99)
         compositions = pca.fit_transform(compositions)

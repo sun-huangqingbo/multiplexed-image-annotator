@@ -17,7 +17,7 @@ import torch
 
 from .markerParse import MarkerParser
 from .markerImputer import MarkerImputer
-from .utils import crop_cell, process_chunk, process_cell_batch
+from .utils import crop_cell, process_chunk
 
 
     
@@ -55,6 +55,12 @@ class ImageProcessor(object):
         if not os.path.exists(self.save_path):
             os.mkdir(self.save_path)
 
+        # clear tmp folder
+        for f in os.listdir(self.save_path):
+            file_path = os.path.join(self.save_path, f)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+
         self.infer = infer
         self.masks = []
         self.device = device
@@ -67,24 +73,39 @@ class ImageProcessor(object):
 
 
 
-    def _img2patches(self, image, mask, channel_index, cell_pos_dict, imputer, id, patch_size=40, save_tensor=True, save_path=None, int_full=False, n_jobs=0):
+    def _img2patches(self, image, mask, channel_index, cell_pos_dict, imputer, id, patch_size=40, save_tensor=True, save_path=None, int_full=False, n_jobs=0, batch_size=10000):
         min_val, img_zero = self._move_image_range(image)
         patch_size = int(patch_size * self.scale)
         cell_index = list(cell_pos_dict.keys())
+        total_cells = len(cell_pos_dict)
         
-        # Create the output array
-        temp = np.zeros((len(cell_pos_dict), len(channel_index), 40, 40))
+        # Calculate number of batches
+        num_batches = (total_cells + batch_size - 1) // batch_size  # Ceiling division
         
-        # Single process implementation
-        if n_jobs <= 0:
-            intensity_full = [] if int_full else None
+        # Create array to store intensity values if needed
+        intensity_full = [] if int_full else None
+        
+        # Process batches sequentially
+        for batch_idx in range(num_batches):
+            # Calculate start and end indices for this batch
+            start_idx = batch_idx * batch_size
+            end_idx = min((batch_idx + 1) * batch_size, total_cells)
+            current_batch_size = end_idx - start_idx
             
-            for j, c in enumerate(cell_index):
+            # Get cell indices for this batch
+            batch_cell_indices = cell_index[start_idx:end_idx]
+            
+            # Create temporary array for current batch only
+            temp = np.zeros((current_batch_size, len(channel_index), 40, 40))
+            
+            # Process cells in this batch
+            batch_intensities = [] if int_full else None
+            for j, c in enumerate(batch_cell_indices):
                 patch, avg_int = crop_cell(img_zero, mask, min_val, c, cell_pos_dict, patch_size)
                 # rescale
                 patch = resize(patch, (patch.shape[0], 40, 40), anti_aliasing=True, order=0, preserve_range=True)
                 if int_full:
-                    intensity_full.append(avg_int)
+                    batch_intensities.append(avg_int)
                     
                 if -1 in channel_index:
                     # get index
@@ -99,69 +120,35 @@ class ImageProcessor(object):
                     patch = patch[channel_index, :, :]
                     
                 temp[j] = patch
-        else:
-            # Create a manager to share data between processes
-            manager = mp.Manager()
-            shared_dict = manager.dict({
-                'cell_pos_dict': cell_pos_dict
-            })
-
-
-            # Create indices and cell IDs for all cells
-            cell_args = [(j, c) for j, c in enumerate(cell_index)]
-
-            # Determine number of processes
-            num_processes = min(n_jobs, mp.cpu_count())
-
-            # Calculate optimal chunk size to reduce overhead (fewer, larger tasks)
-            chunk_size = max(1, len(cell_args) // (num_processes * 4))
-
-            # Split tasks into batches
-            cell_batches = [cell_args[i:i+chunk_size] for i in range(0, len(cell_args), chunk_size)]
-
-            # Create partial function with all the needed data
-            process_batch_func = partial(
-                process_cell_batch,
-                img_zero_local=img_zero,
-                mask_local=mask,
-                min_val_local=min_val,
-                shared_cell_pos_dict=shared_dict['cell_pos_dict'],
-                patch_size_local=patch_size,
-                channel_index_local=channel_index
-            )
-
-            # Process cells in parallel with batching
-            with mp.Pool(processes=num_processes) as pool:
-                batch_results = pool.map(process_batch_func, cell_batches)
-
-            # Collect results
-            intensity_full = [] if int_full else None
-
-            for results_batch in batch_results:
-                for j, patch, avg_int in results_batch:
-                    temp[j] = patch
-                    if int_full:
-                        intensity_full.append(avg_int)
-        
-        # Convert to tensor and post-process
-        tensor_patch = torch.tensor(temp, dtype=torch.float32)
-        del temp
-        
-        if imputer is not None:
-            tensor_patch = imputer.impute(tensor_patch, 64)
             
-        if save_tensor:
-            f = os.path.join(save_path, r"{}.pt".format(id))
-            torch.save(tensor_patch, f)
-
-        if int_full:
+            # Convert current batch to tensor and post-process
+            tensor_patch = torch.tensor(temp, dtype=torch.float32)
+            del temp  # Free memory
+            
+            if imputer is not None:
+                tensor_patch = imputer.impute(tensor_patch, 64)
+                
+            # Save this batch to disk
+            if save_tensor and save_path is not None:
+                os.makedirs(save_path, exist_ok=True)  # Ensure directory exists
+                batch_filename = os.path.join(save_path, f"{id}_batch_{batch_idx}.pt")
+                torch.save(tensor_patch, batch_filename)
+            
+            # Add intensity values if needed
+            if int_full and batch_intensities:
+                intensity_full.extend(batch_intensities)
+                
+            # Free memory
+            del tensor_patch
+        
+        # After all batches are processed, if needed, combine or return intensity information
+        if int_full and intensity_full:
             intensity_full = np.array(intensity_full)
             intensity_full += 1
             intensity_full /= 2
             return intensity_full
             
         return None
-
 
     def _move_image_range(self,image):
         # move image intensity range to (0,N)

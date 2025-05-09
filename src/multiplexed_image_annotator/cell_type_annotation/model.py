@@ -238,183 +238,217 @@ class Annotator(object):
         
         self._loaded = True
         
+    def _process_immune_predictions(self, image_idx, batch_size):
+        """
+        Process immune cell predictions for a specific image.
+
+        """
+        if self.channel_parser.immune_full:
+            celltype_dict = {
+                0: "CD4 T cell", 1: "CD8 T cell", 2: "Dendritic cell", 3: "B cell", 
+                4: "M1 macrophage cell", 5: "M2 macrophage cell", 6: "Regulatory T cell", 
+                7: "Granulocyte cell", 8: "Plasma cell", 9: "Natural killer cell", 
+                10: "Mast cell", 11: "Others"
+            }
+            
+            predictions = self._predict_cell_types(
+                image_idx=image_idx,
+                model=self.immune_full_model,
+                tensor_name="immune_full",
+                celltype_dict=celltype_dict,
+                batch_size=batch_size
+            )
+            
+            self.immune_full_pred.append(predictions)
+            self.immune_annotations.append(predictions)
+            
+        elif self.channel_parser.immune_extended:
+            celltype_dict = {
+                0: "CD4 T cell", 1: "CD8 T cell", 2: "Dendritic cell", 3: "B cell", 
+                4: "M1 macrophage cell", 5: "M2 macrophage cell", 
+                6: "Natural killer cell", 7: "Others"
+            }
+            
+            predictions = self._predict_cell_types(
+                image_idx=image_idx,
+                model=self.immune_extended_model,
+                tensor_name="immune_extended",
+                celltype_dict=celltype_dict,
+                batch_size=batch_size
+            )
+            
+            self.immune_extended_pred.append(predictions)
+            self.immune_annotations.append(predictions)
+            
+        elif self.channel_parser.immune_base:
+            celltype_dict = {
+                0: "B cell", 1: "CD4 T cell", 2: "CD8 T cell", 
+                3: "Others", 4: "Dendritic cell"
+            }
+            
+            predictions = self._predict_cell_types(
+                image_idx=image_idx,
+                model=self.immune_base_model,
+                tensor_name="immune_base",
+                celltype_dict=celltype_dict,
+                batch_size=batch_size
+            )
+            
+            self.immune_base_pred.append(predictions)
+            self.immune_annotations.append(predictions)
+            
+        else:
+            print("No immune cell model to predict")
+            self.logger.log("No immune cell model to predict")
+
+    def _process_structure_predictions(self, image_idx, batch_size):
+        """
+        Process tissue structure predictions for a specific image.
+        """
+        if self.channel_parser.struct:
+            celltype_dict = {
+                0: "Stroma cell", 1: "Smooth muscle", 2: "Endothelial cell", 
+                3: "Epithelial cell", 4: "Proliferating/tumor cell", 5: "Others"
+            }
+            
+            predictions = self._predict_cell_types(
+                image_idx=image_idx,
+                model=self.struct_model,
+                tensor_name="structure",
+                celltype_dict=celltype_dict,
+                batch_size=batch_size
+            )
+            
+            self.struct_pred.append(predictions)
+            self.struct_annotations.append(predictions)
+            
+        else:
+            print("No structure model to predict")
+            self.logger.log("No structure model to predict")
+
+    def _process_nerve_predictions(self, image_idx, batch_size):
+        """
+        Process nerve cell predictions for a specific image.
+        """
+        if self.channel_parser.nerve:
+            celltype_dict = {0: "Nerve cell", 1: "Others"}
+            
+            predictions = self._predict_cell_types(
+                image_idx=image_idx,
+                model=self.nerve_model,
+                tensor_name="nerve_cell",
+                celltype_dict=celltype_dict,
+                batch_size=batch_size
+            )
+            
+            self.nerve_pred.append(predictions)
+            self.nerve_annotations.append(predictions)
+            
+        else:
+            print("No nerve cell model to predict")
+            self.logger.log("No nerve cell model to predict")
+
+    def _predict_cell_types(self, image_idx, model, tensor_name, celltype_dict, batch_size):
+        """
+        Core prediction function that processes patches in batches.
+        Supports both batched and non-batched file formats.
         
+        Args:
+            image_idx (int): Index of the image to process.
+            model (torch.nn.Module): The trained model to use for prediction.
+            tensor_name (str): Base name of the tensor files.
+            celltype_dict (dict): Dictionary mapping class indices to cell type names.
+            batch_size (int): Number of patches to process at once.
+            
+        Returns:
+            list: List of dictionaries containing predictions for each cell.
+        """
+        all_predictions = []
+        batch_idx = 0
+        
+        while True:
+            batch_file = os.path.join(
+                self.temp_dir, 
+                f"{self.batch_id}_{image_idx}_{tensor_name}_batch_{batch_idx}.pt"
+            )
+            
+            # Check if batch file exists, otherwise try the non-batch version
+            if not os.path.exists(batch_file):
+                if batch_idx == 0:
+                    # Try the original non-batched file format
+                    old_format = os.path.join(
+                        self.temp_dir, 
+                        f"{self.batch_id}_{image_idx}_{tensor_name}.pt"
+                    )
+                    if os.path.exists(old_format):
+                        batch_file = old_format
+                    else:
+                        self.logger.log(f"Warning: No tensor found for {tensor_name} model (image {image_idx})")
+                        return []
+                else:
+                    # We've processed all available batches
+                    break
+            
+            # Load this batch
+            images = torch.load(batch_file)
+            
+            # Process predictions in sub-batches
+            temp = []
+            for i in range(0, len(images), batch_size):
+                x = images[i:i+batch_size]
+                x = x.to(self.device, dtype=torch.float32, non_blocking=True)
+                
+                with torch.no_grad():  # Disable gradient calculation for inference
+                    pred_ = model(x)
+                    # Apply softmax
+                    pred_ = nn.functional.softmax(pred_, dim=1)
+                    
+                temp.append(pred_.detach().cpu().numpy())
+
+            # Concatenate batch results
+            temp = np.concatenate(temp, axis=0)
+
+            # Convert predictions to dictionaries
+            for j in range(len(temp)):
+                pred = {celltype_dict[i]: temp[j][i] for i in range(len(temp[j]))}
+                all_predictions.append(pred)
+
+            # Free memory
+            del temp
+            del images
+            
+            # If using old non-batched format, we're done after one iteration
+            if batch_file == os.path.join(self.temp_dir, f"{self.batch_id}_{image_idx}_{tensor_name}.pt"):
+                break
+                
+            # Move to next batch
+            batch_idx += 1
+        return all_predictions
+
+
+
+                
     def predict(self, batch_size=32):
+        """
+        Predict cell types and tissue structures from pre-processed image patches.
+        Supports both batch-processed tensors and single-file tensors.
+        
+        Args:
+            batch_size (int): Number of patches to process at once during prediction.
+        """
         self.logger.log("\nStart predicting cell types and tissue structures.")
-        # check if models are loaded
-        if self._loaded == False:
+        
+        # Check if models are loaded
+        if not self._loaded:
             self.load_models()
 
-        # load pre-saved tensor
-        for ii in range(self._n_images):
-            if self.channel_parser.immune_full:
-                f = os.path.join(self.temp_dir, f"{self.batch_id}_{ii}_immune_full.pt")
-                if os.path.exists(f):
-                    images = torch.load(f)
-                else:
-                    raise ValueError(f"Image tensor {f} not found")
-                # predict immune full using batches
-                temp = []
-                for i in range(0, len(images), batch_size):
-                    x = images[i:i+batch_size]
-                    x = x.to(self.device, dtype = torch.float32, non_blocking=True)
-                    pred_ = self.immune_full_model(x)
-                    # softmax
-                    pred_ = nn.functional.softmax(pred_, dim=1)
-                    temp.append(pred_.detach().cpu().numpy())
-
-                temp = np.concatenate(temp, axis=0)
-
-                celltype_dict = {0: "CD4 T cell", 1: "CD8 T cell", 2: "Dendritic cell", 3: "B cell", 4: "M1 macrophage cell", 5: "M2 macrophage cell", 
-                                 6: "Regulatory T cell", 7: "Granulocyte cell", 8: "Plasma cell", 9: "Natural killer cell", 10: "Mast cell", 11: "Others"}
-
-                pred = []
-
-                for j in range(len(temp)):
-                    pred.append({celltype_dict[i]: temp[j][i] for i in range(len(temp[j]))})
-                self.immune_full_pred.append(pred)
-
-                del temp
-
-                self.immune_annotations.append(pred)
-
-
-            elif self.channel_parser.immune_extended:
-                f = os.path.join(self.temp_dir, f"{self.batch_id}_{ii}_immune_extended.pt")
-                if os.path.exists(f):
-                    images = torch.load(f)
-                else:
-                    raise ValueError(f"Image tensor {f} not found")
-
-                temp = []
-                for i in range(0, len(images), batch_size):
-                    x = images[i:i+batch_size]
-                    x = x.to(self.device, dtype = torch.float32, non_blocking=True)
-                    pred_ = self.immune_extended_model(x)
-                    # softmax
-                    pred_ = nn.functional.softmax(pred_, dim=1)
-                    temp.append(pred_.detach().cpu().numpy())
-                    
-                temp = np.concatenate(temp, axis=0)
-
-                celltype_dict = {0: "CD4 T cell", 1: "CD8 T cell", 2: "Dendritic cell", 3: "B cell", 4: "M1 macrophage cell",
-                                    5: "M2 macrophage cell", 6: "Natural killer cell", 7: "Others"}
+        # Process each image
+        for image_idx in range(self._n_images):
+            self._process_immune_predictions(image_idx, batch_size)
+            self._process_structure_predictions(image_idx, batch_size)
+            self._process_nerve_predictions(image_idx, batch_size)
                 
-                
-                pred = []
-                for j in range(len(temp)):
-                    pred.append({celltype_dict[i]: temp[j][i] for i in range(len(temp[j]))})
-                self.immune_extended_pred.append(pred)
-
-                del temp
-
-                self.immune_annotations.append(pred)
-        
-            elif self.channel_parser.immune_base:
-                f = os.path.join(self.temp_dir, f"{self.batch_id}_{ii}_immune_base.pt")
-                if os.path.exists(f):
-                    images = torch.load(f)
-                else:
-                    raise ValueError(f"Image tensor {f} not found")
-                # predict immune base using batches
-                temp = []
-                for i in range(0, len(images), batch_size):
-                    x = images[i:i+batch_size]
-                    x = x.to(self.device, dtype = torch.float32, non_blocking=True)
-                    pred_ = self.immune_base_model(x)
-                    # softmax
-                    pred_ = nn.functional.softmax(pred_, dim=1)
-                    temp.append(pred_.detach().cpu().numpy())
-                    # append the second highest prediction
-
-                temp = np.concatenate(temp, axis=0)
-
-                celltype_dict = {0: "B cell", 1: "CD4 T cell", 2: "CD8 T cell", 3: "Others", 4: "Dendritic cell"}
-
-                pred = []
-
-                for j in range(len(temp)):
-                    pred.append({celltype_dict[i]: temp[j][i] for i in range(len(temp[j]))})
-
-                self.immune_base_pred.append(pred)
-
-                del temp
-
-                self.immune_annotations.append(pred)
-            else:
-                print("No immune cell model to predict")
-                self.logger.log("No immune cell model to predict")
-
-
-            if self.channel_parser.struct:
-                f = os.path.join(self.temp_dir, f"{self.batch_id}_{ii}_structure.pt")
-                if os.path.exists(f):
-                    images = torch.load(f)
-                else:
-                    raise ValueError(f"Image tensor {f} not found")
-                # predict structure using batches
-                temp = []
-                for i in range(0, len(images), batch_size):
-                    x = images[i:i+batch_size]
-                    x = x.to(self.device, dtype = torch.float32, non_blocking=True)
-                    pred_ = self.struct_model(x)
-                    # softmax
-                    pred_ = nn.functional.softmax(pred_, dim=1)
-                    temp.append(pred_.detach().cpu().numpy())
-
-                temp = np.concatenate(temp, axis=0)
-  
-
-                celltype_dict = {0: "Stroma cell" , 1: "Smooth muscle", 2: "Endothelial cell", 3: "Epithelial cell", 4: "Proliferating/tumor cell", 5: "Others"}
-
-                pred = []
-
-                for j in range(len(temp)):
-                    pred.append({celltype_dict[i]: temp[j][i] for i in range(len(temp[j]))})
-                self.struct_pred.append(pred)
-
-                del temp
-
-                self.struct_annotations.append(pred)
-
-            else:
-                print("No structure model to predict")
-                self.logger.log("No structure model to predict")
-
-            if self.channel_parser.nerve:
-                f = os.path.join(self.temp_dir, f"{self.batch_id}_{ii}_nerve_cell.pt")
-                if os.path.exists(f):
-                    images = torch.load(f)
-                else:
-                    raise ValueError(f"Image tensor {f} not found")
-                # predict nerve using batches
-                temp = []
-                for i in range(0, len(images), batch_size):
-                    x = images[i:i+batch_size]
-                    x = x.to(self.device, dtype = torch.float32, non_blocking=True)
-                    pred_ = self.nerve_model(x)
-                    # softmax
-                    pred_ = nn.functional.softmax(pred_, dim=1)
-                    temp.append(pred_.detach().cpu().numpy())
-
-                temp = np.concatenate(temp, axis=0)
-  
-
-                celltype_dict = {0: "Nerve cell", 1: "Others"}
-
-                pred = []
-
-                for j in range(len(temp)):
-                    pred.append({celltype_dict[i]: temp[j][i] for i in range(len(temp[j]))})
-                self.nerve_pred.append(pred)
-
-                del temp
-
-                self.nerve_annotations.append(pred)
-
-            else:
-                print("No nerve cell model to predict")
-                self.logger.log("No nerve cell model to predict")
+        self.logger.log("Finished predicting cell types and tissue structures.")
 
         self.merge_by_voting()
 
@@ -445,7 +479,6 @@ class Annotator(object):
                 
 
     def merge_by_voting(self):
-
         # full
         if len(self.immune_full_pred) > 0 and len(self.struct_pred) > 0 and len(self.nerve_pred) > 0:
             for i in range(len(self.immune_full_pred)):
