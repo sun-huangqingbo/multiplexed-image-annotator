@@ -31,21 +31,79 @@ def rgb_to_hex(rgb):
     return '#{:02x}{:02x}{:02x}'.format(rgb[0], rgb[1], rgb[2])
 
 def get_colors(n):
+    """
+    Generate n visually distinct colors similar to the standard palette.
+    
+    Args:
+        n: Number of colors to generate
+        
+    Returns:
+        List of (r,g,b) tuples with values in range 0-255
+    """
+    n = n - 1  # Adjust for the last color which is always gray
     colors = []
     
-    # Randomly generate colors in HSV space, ensuring they are distinct
-    for i in range(n - 1):
-        hue = i / n  # Spread the hues evenly
-        saturation = 0.6 + random.uniform(0, 0.4)
-        value = 0.6 + random.uniform(0, 0.4) 
-        rgb = colorsys.hsv_to_rgb(hue, saturation, value)  # Convert HSV to RGB
+    # Start with the standard palette for smaller n
+    standard_colors = [
+        (255, 0, 0),      # Red
+        (0, 0, 255),      # Blue
+        (0, 128, 0),      # Green
+        (255, 255, 0),    # Yellow
+        (255, 0, 255),    # Magenta
+        (0, 255, 255),    # Cyan
+        (255, 165, 0),    # Orange 
+        (128, 0, 128),    # Purple
+        (0, 128, 128),    # Teal
+        (128, 0, 0),      # Maroon
+        (0, 0, 128),      # Navy
+        (128, 128, 0),    # Olive
+        (255, 192, 203),  # Pink
+        (165, 42, 42),    # Brown
+        (0, 255, 0),      # Lime
+        (135, 206, 235),  # Sky Blue
+        (75, 0, 130),     # Indigo
+        (255, 215, 0),    # Gold
+        (192, 192, 192)   # Silver
+    ]
+    
+    # If n is less than or equal to the standard palette size, just return the first n colors
+    if n <= len(standard_colors):
+        colors = standard_colors[:n]
+        # Add gray color at the end
+        colors.append((192, 192, 192))
+        return colors
+    
+    # If we need more colors, use HSV color space to generate them evenly around the color wheel
+    
+    # First, add all standard colors
+    colors = standard_colors.copy()
+    
+    # Then generate additional colors
+    remaining = n - len(colors)
+    
+    # Use golden ratio to get well-distributed colors
+    golden_ratio_conjugate = 0.618033988749895
+    h = 0.1  # Starting hue
+    
+    # Generate saturation and value ranges similar to the existing palette
+    saturations = [0.7, 0.8, 0.9, 1.0]
+    values = [0.7, 0.8, 0.9, 1.0]
+    
+    while len(colors) < n:
+        # Use golden ratio to get next hue - this creates visually pleasing distribution
+        h = (h + golden_ratio_conjugate) % 1.0
         
-        # Convert to 8-bit RGB format
-        colors.append([int(c * 255) for c in rgb])
-    # shuffle the colors
-    random.shuffle(colors)
+        # Cycle through different saturation and value combinations for variety
+        s = saturations[len(colors) % len(saturations)]
+        v = values[len(colors) % len(values)]
+        
+        # Convert HSV to RGB (0-1 range)
+        r, g, b = colorsys.hsv_to_rgb(h, s, v)
+        
+        # Convert to 0-255 range and append to colors list
+        colors.append((int(r * 255), int(g * 255), int(b * 255)))
 
-    colors.append([192, 192, 192])
+    colors.append((192, 192, 192))
     
     return colors
 

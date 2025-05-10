@@ -20,8 +20,9 @@ def run(marker_list_path, image_path, mask_path, device, main_dir, batch_id, bs,
     annotator.predict(bs)
     annotator.generate_heatmap(integrate=True)
     annotator.export_annotations()
-    # annotator.tissue_region_analysis(n_regions)
-    # annotator.neighborhood_analysis(integrate=True, normalize=True)
+    if n_regions > 0:
+        annotator.tissue_region_analysis(n_regions)
+    annotator.neighborhood_analysis(integrate=True, normalize=True)
     annotator.colorize(from_script=True)
     annotator.cell_type_composition()
     annotator.clear_tmp()
@@ -43,8 +44,9 @@ def batch_run(marker_list_path, image_path, device, main_dir, batch_id, bs, stri
     annotator.predict(bs)
     annotator.generate_heatmap(integrate=True)
     annotator.export_annotations()
-    # annotator.tissue_region_analysis(n_regions)
-    # annotator.neighborhood_analysis(integrate=True, normalize=True)
+    if n_regions > 0:
+        annotator.tissue_region_analysis(n_regions)
+    annotator.neighborhood_analysis(integrate=True, normalize=True)
     annotator.colorize(from_script=True)
     annotator.cell_type_composition()
     annotator.clear_tmp()

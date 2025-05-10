@@ -843,7 +843,7 @@ class Annotator(object):
                 f = os.path.join(self.result_dir, f"{self.batch_id}_tissue_region_{i}.png")
                 Image.fromarray(tissuemap).save(f)
 
-            if not from_script:
+            if not from_script and self.n_regions > 0:
                 f = "./src/multiplexed_image_annotator/cell_type_annotation/_working_dir_temp/output_img_2.png"
                 Image.fromarray(tissuemap2).save(f)
 

@@ -130,7 +130,7 @@ class BatchProcess(QWidget):
         upper_limit={'widget_type': 'FloatSlider', 'min': 95, 'max': 100},
         cell_size={'min': 1, 'max': 100},
         min_cells={'min': -1, 'max': 10000},
-        n_regions={'min': 1, 'max': 50},
+        n_regions={'min': -1, 'max': 50},
         confidence={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         main_dir={'widget_type': 'FileEdit', 'mode': 'd'},
         job_status={'widget_type': 'Label', 'value': 'You do not have running jobs.'}
@@ -462,9 +462,10 @@ class GUIIntegrater(QWidget):
 
         try: 
             output_img = imageio.imread(output_addr)
-            output_img_2 = imageio.imread(output_addr_2)
             self.viewer.add_labels(output_img, name="cell_type_map")
-            self.viewer.add_labels(output_img_2, name="tissue_region")
+            if os.path.exists(output_addr_2):
+                output_img_2 = imageio.imread(output_addr_2)
+                self.viewer.add_labels(output_img_2, name="tissue_region")
         except:
             print("output_img reading error")
             show_info("Notice! Your output_img reading error! The process may have problem.")
@@ -510,7 +511,7 @@ class GUIIntegrater(QWidget):
         upper_limit={'widget_type': 'FloatSlider', 'min': 95, 'max': 100},
         cell_size={'min': 1, 'max': 100},
         min_cells={'min': -1, 'max': 10000},
-        n_regions={'min': 1, 'max': 50},
+        n_regions={'min': -1, 'max': 50},
         confidence={'widget_type': 'FloatSlider', 'min': 0, 'max': 1},
         main_dir={'widget_type': 'FileEdit', 'mode': 'd'},
         job_status={'widget_type': 'Label', 'value': 'You do not have running jobs.'}
