@@ -469,7 +469,7 @@ class Annotator(object):
                 cell_type_int = np.where(self.cell_types == self.annotations[i][j])[0][0]
                 conf = self.confidence[i][j]
                 # get coordinates
-                row, col = self.preprocessor.cell_pos_dict[i][j + 1]
+                row, col = self.preprocessor.cell_pos_dict[i][key]
 
                 dict_ = {"Cell ID": key, "Cell type": cell_type_int, "Confidence": conf, "Row": row, "Column": col}
                 temp.append(dict_)

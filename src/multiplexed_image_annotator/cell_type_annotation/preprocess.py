@@ -176,7 +176,8 @@ class ImageProcessor(object):
 
                     cell_pos_dict[c][0].append(i)
                     cell_pos_dict[c][1].append(j)
-
+            # sort keys from smallest to largest
+            cell_pos_dict = dict(sorted(cell_pos_dict.items()))
             return cell_pos_dict
         
         # Multi-process implementation
@@ -205,7 +206,8 @@ class ImageProcessor(object):
                     
                     cell_pos_dict[cell_id][0].extend(positions[0])
                     cell_pos_dict[cell_id][1].extend(positions[1])
-            
+            # sort keys from smallest to largest
+            cell_pos_dict = dict(sorted(cell_pos_dict.items()))
             return cell_pos_dict
 
 
