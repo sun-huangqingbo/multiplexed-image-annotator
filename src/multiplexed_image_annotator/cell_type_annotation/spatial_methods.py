@@ -184,7 +184,8 @@ def tissue_region_partition(annotation_all, n_clusters=3, n_jobs=0):
         # PCA
         pca = PCA(n_components=0.99)
         compositions = pca.fit_transform(compositions)
-        clusterer = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', n_neighbors=30, n_jobs=n_jobs)
+        # clusterer = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', n_neighbors=30, n_jobs=n_jobs)
+        clusterer = KMeans(n_clusters=n_clusters)
         cluster_labels = clusterer.fit_predict(compositions)
         
         for j, id_ in enumerate(cell_id):
