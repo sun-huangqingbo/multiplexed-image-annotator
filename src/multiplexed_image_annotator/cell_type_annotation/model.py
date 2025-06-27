@@ -789,9 +789,9 @@ class Annotator(object):
         neighborhood_analysis(self.annotations_all, n_neighbors=n_neighbors, cell_types=self.cell_types, integrate=integrate, 
                               normalize=normalize, result_dir=self.result_dir, batch_id=self.batch_id)
                 
-    def tissue_region_analysis(self, n):
+    def tissue_region_analysis(self, n, method="kmeans"):
         self.n_regions = n
-        self.tissue_regions = tissue_region_partition(self.annotations_all, n, self.n_jobs)
+        self.tissue_regions = tissue_region_partition(self.annotations_all, n, self.n_jobs, method=method)
 
     def colorize(self, from_script=False):
         colors = self.colors

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from sklearn.neighbors import NearestNeighbors
-from sklearn.cluster import SpectralClustering, KMeans
+from sklearn.cluster import SpectralClustering, KMeans, HDBSCAN
 from sklearn.decomposition import PCA
 
 import numpy as np
@@ -129,7 +129,7 @@ def neighborhood_analysis(annotation_all, n_neighbors=10, cell_types=None, integ
                     file.write("\n")
 
 
-def tissue_region_partition(annotation_all, n_clusters=3, n_jobs=0):
+def tissue_region_partition(annotation_all, n_clusters=3, n_jobs=0, method="kmeans"):
 
     tissue_labels = []
     for i in range(len(annotation_all)):
@@ -184,8 +184,12 @@ def tissue_region_partition(annotation_all, n_clusters=3, n_jobs=0):
         # PCA
         pca = PCA(n_components=0.99)
         compositions = pca.fit_transform(compositions)
-        # clusterer = SpectralClustering(n_clusters=n_clusters, affinity='nearest_neighbors', n_neighbors=30, n_jobs=n_jobs)
-        clusterer = KMeans(n_clusters=n_clusters)
+        if method == "kmeans":
+            clusterer = KMeans(n_clusters=n_clusters)
+        elif method == "hdbscan":
+            clusterer = HDBSCAN(n_clusters=n_clusters)
+        elif method == "spectral":
+            clusterer = SpectralClustering(n_clusters=n_clusters, n_jobs=n_jobs)
         cluster_labels = clusterer.fit_predict(compositions)
         
         for j, id_ in enumerate(cell_id):
