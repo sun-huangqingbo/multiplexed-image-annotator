@@ -258,17 +258,17 @@ class MaskedAutoencoderViT(nn.Module):
 class MarkerImputer():
     def __init__(self, channel_index, device, panel=""):
         if panel == "immune_full" and os.path.exists(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_full_impute.pth"):
-            checkpoint = torch.load(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_full_impute.pth", map_location=device)["model"]
+            checkpoint = torch.load(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_full_impute.pth", map_location=device, weights_only=False)["model"]
             img_size = (120, 200)
             channel_number = 15
             self.shape = (3, 5)
         elif panel == "immune_extended" and os.path.exists(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_extended_impute.pth"):
-            checkpoint = torch.load(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_extended_impute.pth", map_location=device)["model"]
+            checkpoint = torch.load(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_extended_impute.pth", map_location=device, weights_only=False)["model"]
             img_size = (80, 200)
             channel_number = 10
             self.shape = (2, 5)
         elif panel == "immune_base" and os.path.exists(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_base_impute.pth"):
-            checkpoint = torch.load(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_base_impute.pth", map_location=device)["model"]
+            checkpoint = torch.load(r"src/multiplexed_image_annotator/cell_type_annotation/models/immune_base_impute.pth", map_location=device, weights_only=False)["model"]
             img_size = (40, 280)
             channel_number = 7
             self.shape = (1, 7)

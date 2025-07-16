@@ -188,7 +188,7 @@ class Annotator(object):
     def load_models(self):
         if os.path.exists("src/multiplexed_image_annotator/cell_type_annotation/models/immune_base.pth"):
             self.immune_base_model = vit_s(img_size=40, in_chans=7, num_classes=5, drop_path_rate=0.1, global_pool=False)
-            checkpoint = torch.load("src/multiplexed_image_annotator/cell_type_annotation/models/immune_base.pth", map_location=self.device)["model"]
+            checkpoint = torch.load("src/multiplexed_image_annotator/cell_type_annotation/models/immune_base.pth", map_location=self.device, weights_only=False)["model"]
             self.immune_base_model.load_state_dict(checkpoint)
             self.immune_base_model.eval()
             self.immune_base_model.to(self.device)
@@ -198,7 +198,7 @@ class Annotator(object):
         
         if os.path.exists("src/multiplexed_image_annotator/cell_type_annotation/models/immune_extended.pth"):
             self.immune_extended_model = vit_m(img_size=40, in_chans=10, num_classes=8, drop_path_rate=0.1, global_pool=False)
-            checkpoint = torch.load("src/multiplexed_image_annotator/cell_type_annotation/models/immune_extended.pth", map_location=self.device)["model"]
+            checkpoint = torch.load("src/multiplexed_image_annotator/cell_type_annotation/models/immune_extended.pth", map_location=self.device, weights_only=False)["model"]
             self.immune_extended_model.load_state_dict(checkpoint)
             self.immune_extended_model.eval()
             self.immune_extended_model.to(self.device)
@@ -208,7 +208,7 @@ class Annotator(object):
         
         if os.path.exists("src/multiplexed_image_annotator/cell_type_annotation/models/immune_full.pth"):
             self.immune_full_model = vit_l(img_size=40, in_chans=15, num_classes=12, drop_path_rate=0.1, global_pool=False)
-            checkpoint = torch.load("src/multiplexed_image_annotator/cell_type_annotation/models/immune_full.pth", map_location=self.device)["model"]
+            checkpoint = torch.load("src/multiplexed_image_annotator/cell_type_annotation/models/immune_full.pth", map_location=self.device, weights_only=False)["model"]
             self.immune_full_model.load_state_dict(checkpoint)
             self.immune_full_model.eval()
             self.immune_full_model.to(self.device)
@@ -218,7 +218,7 @@ class Annotator(object):
         
         if os.path.exists("src/multiplexed_image_annotator/cell_type_annotation/models/struct.pth"):
             self.struct_model = vit_s(img_size=40, in_chans=7, num_classes=6, drop_path_rate=0.1, global_pool=False)
-            checkpoint = torch.load("src/multiplexed_image_annotator/cell_type_annotation/models/struct.pth", map_location=self.device)["model"]
+            checkpoint = torch.load("src/multiplexed_image_annotator/cell_type_annotation/models/struct.pth", map_location=self.device, weights_only=False)["model"]
             self.struct_model.load_state_dict(checkpoint)
             self.struct_model.eval()
             self.struct_model.to(self.device)
@@ -228,7 +228,7 @@ class Annotator(object):
 
         if os.path.exists("src/multiplexed_image_annotator/cell_type_annotation/models/nerve.pth"):
             self.nerve_model = vit_tiny(img_size=40, in_chans=3, num_classes=2, drop_path_rate=0.1, global_pool=False)
-            checkpoint = torch.load("src/multiplexed_image_annotator/cell_type_annotation/models/nerve.pth", map_location=self.device)["model"]
+            checkpoint = torch.load("src/multiplexed_image_annotator/cell_type_annotation/models/nerve.pth", map_location=self.device, weights_only=False)["model"]
             self.nerve_model.load_state_dict(checkpoint)
             self.nerve_model.eval()
             self.nerve_model.to(self.device)

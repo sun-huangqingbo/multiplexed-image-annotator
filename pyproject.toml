@@ -37,7 +37,7 @@ dependencies = [
     "seaborn",
     "scikit-learn",
     "tifffile",
-    "timm",
+    "timm<=1.0.14",
     "torch",
     "umap-learn",
     "gdown",

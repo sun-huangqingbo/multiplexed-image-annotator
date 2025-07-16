@@ -247,7 +247,7 @@ class ImageProcessor(object):
             if len(mask.shape) == 3:
                 mask = mask[:, :, 0] # assume the first channel is the mask
                 # make sure mask is integer
-                mask = mask.astype(np.int32)
+            mask = mask.astype(np.int32)
 
             if self.normalization:
                 image = self._normalize(image, blur=self.blur, amax=self.amax)
