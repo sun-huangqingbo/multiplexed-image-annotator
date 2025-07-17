@@ -814,15 +814,15 @@ class Annotator(object):
                 tissue_colors = get_colors(self.n_regions + 1)
             
             
-            for j in range(1, mask.max() + 1):
-                celltype_pred = np.where(self.cell_types == self.annotations[i][j - 1])[0][0]
-                row, col = self.preprocessor.cell_pos_dict[i][j]
+            for j, key in enumerate(self.preprocessor.cell_pos_dict[i].keys()):
+                celltype_pred = np.where(self.cell_types == self.annotations[i][j])[0][0]
+                row, col = self.preprocessor.cell_pos_dict[i][key]
                 colormap[row, col, :] = colors[celltype_pred]
-                colormap2[row, col, :] = number_to_rgb(self.confidence[i][j - 1]) if self.confidence[i][j - 1] > 0 else [192, 192, 192]
+                colormap2[row, col, :] = number_to_rgb(self.confidence[i][j]) if self.confidence[i][j] > 0 else [192, 192, 192]
                 colormap3[row, col] = celltype_pred + 1
                 if self.n_regions > 0:
-                    tissuemap[row, col, :] = tissue_colors[self.tissue_regions[i][j]]
-                    tissuemap2[row, col] = self.tissue_regions[i][j] + 1
+                    tissuemap[row, col, :] = tissue_colors[self.tissue_regions[i][key]]
+                    tissuemap2[row, col] = self.tissue_regions[i][key] + 1
             if self.n_regions > 0:
                 tissue_colors = {f"Region {i}": rgb_to_hex(tissue_colors[i]) for i in range(len(tissue_colors))}
                 color_legend(self.result_dir, tissue_colors, cell=False)
