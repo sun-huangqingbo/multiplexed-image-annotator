@@ -655,7 +655,7 @@ class Annotator(object):
             reducer = umap.UMAP(n_components=5)
             # check for number of samples
             n_samples = len(intensity_others)
-            if n_samples > 5:
+            if n_samples > 10:
                 embedding = reducer.fit_transform(intensity_others)
             else:
                 # annotate all as others
