@@ -653,7 +653,17 @@ class Annotator(object):
         if len(intensity_others) > 0:
             intensity_others = np.array(intensity_others)
             reducer = umap.UMAP(n_components=5)
-            embedding = reducer.fit_transform(intensity_others)
+            # check for number of samples
+            n_samples = len(intensity_others)
+            if n_samples > 5:
+                embedding = reducer.fit_transform(intensity_others)
+            else:
+                # annotate all as others
+                for i in range(len(indices)):
+                    self.annotations[indices[i][0]][indices[i][1]] = "Others"
+                    self.confidence[indices[i][0]][indices[i][1]] = -1
+                return
+
             # kmeans = KMeans(n_clusters=3, random_state=0).fit(embedding)
             clustering_model = HDBSCAN(min_cluster_size=min_samples).fit(embedding)
             for i in range(len(clustering_model.labels_)):
